@@ -6,6 +6,7 @@ import AboutPage from './pages/common/AboutPage'
 import ContactPage from './pages/common/ContactPage'
 import HomePage from './pages/common/HomePage'
 import ServicesPage from './pages/common/ServicesPage'
+import FarmerDashboardPage from './pages/farmer/FarmerDashboardPage'
 import { AuthProvider } from './store/authStore'
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
           <Route path="/contact" element={<Layout isHomePage={false}><ContactPage /></Layout>} />
           <Route path="/login" element={<Layout isHomePage={false}><LoginPage /></Layout>} />
           <Route path="/register" element={<Layout isHomePage={false}><RegisterPage /></Layout>} />
+          <Route path="/farmer/dashboard" element={<Layout isHomePage={false}><FarmerDashboardPage /></Layout>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

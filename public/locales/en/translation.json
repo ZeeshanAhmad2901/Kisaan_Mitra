@@ -1,0 +1,81 @@
+{
+  "topStrip": {
+    "ashokaStambh": "Ashoka Stambh",
+    "governmentOfIndia": "Government of India",
+    "pmModi": "PM Modi",
+    "primeMinister": "Prime Minister of India"
+  },
+  "navbar": {
+    "home": "Home",
+    "about": "About",
+    "services": "Services",
+    "contact": "Contact",
+    "login": "Login",
+    "english": "English",
+    "hindi": "हिन्दी"
+  },
+  "home": {
+    "title": "Kisaan Mitra",
+    "subtitle": "Empowering Indian Farmers with Technology",
+    "quote": "Service to farmers is the greatest service of all",
+    "getStarted": "Get Started",
+    "learnMore": "Learn More"
+  },
+  "about": {
+    "title": "About Kisaan Mitra",
+    "description": "Kisaan Mitra is a digital platform designed to empower Indian farmers by providing access to mandi prices, government schemes, and direct market connectivity — all in their own language.",
+    "forFarmers": "For Farmers",
+    "forFarmersDesc": "Real-time mandi prices and schemes",
+    "forMandiOwners": "For Mandi Owners",
+    "forMandiOwnersDesc": "Manage mandi operations digitally",
+    "forGovernment": "For Government",
+    "forGovernmentDesc": "Monitor and support agriculture"
+  },
+  "services": {
+    "title": "Our Services",
+    "subtitle": "Everything a farmer needs, in one place",
+    "livePrices": "Live Mandi Prices",
+    "livePricesDesc": "Check real-time crop prices across all mandis",
+    "schemes": "Government Schemes",
+    "schemesDesc": "Browse and apply for farmer welfare schemes",
+    "helpline": "Helpline Support",
+    "helplineDesc": "24/7 support in Hindi and English",
+    "weather": "Weather Updates",
+    "weatherDesc": "Local weather forecasts for better planning",
+    "equipment": "Equipment Sharing",
+    "equipmentDesc": "Rent or share farming equipment nearby",
+    "training": "Training & Guides",
+    "trainingDesc": "Learn modern farming techniques"
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "We're here to help Indian farmers",
+    "name": "Name",
+    "namePlaceholder": "Enter your name",
+    "email": "Email",
+    "emailPlaceholder": "Enter your email",
+    "message": "Message",
+    "messagePlaceholder": "Write your message...",
+    "send": "Send Message"
+  },
+  "login": {
+    "title": "Login",
+    "subtitle": "Access your Kisaan Mitra account",
+    "emailOrPhone": "Email or Phone",
+    "emailOrPhonePlaceholder": "Enter your email or phone",
+    "password": "Password",
+    "passwordPlaceholder": "Enter your password",
+    "rememberMe": "Remember me",
+    "forgotPassword": "Forgot password?",
+    "loginButton": "Login",
+    "noAccount": "Don't have an account?",
+    "register": "Register"
+  },
+  "footer": {
+    "tagline": "Empowering Indian Farmers",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfUse": "Terms of Use",
+    "contactUs": "Contact Us",
+    "copyright": "© 2025 Kisaan Mitra, Government of India"
+  }
+}

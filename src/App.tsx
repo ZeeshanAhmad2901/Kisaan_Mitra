@@ -5,6 +5,7 @@ import RegisterPage from './pages/auth/RegisterPage'
 import AboutPage from './pages/common/AboutPage'
 import ContactPage from './pages/common/ContactPage'
 import HomePage from './pages/common/HomePage'
+import NotFoundPage from './pages/common/NotFoundPage'
 import ServicesPage from './pages/common/ServicesPage'
 import BookSlotPage from './pages/farmer/BookSlotPage'
 import BookingSuccessPage from './pages/farmer/BookingSuccessPage'
@@ -47,6 +48,7 @@ function App() {
           <Route path="/super-admin/owners" element={<Layout isHomePage={false}><ManageOwnersPage /></Layout>} />
           <Route path="/super-admin/analytics" element={<Layout isHomePage={false}><PlatformAnalyticsPage /></Layout>} />
           <Route path="/super-admin/settings" element={<Layout isHomePage={false}><SystemSettingsPage /></Layout>} />
+          <Route path="*" element={<Layout isHomePage={false}><NotFoundPage /></Layout>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

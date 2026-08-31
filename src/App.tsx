@@ -11,6 +11,10 @@ import BookingSuccessPage from './pages/farmer/BookingSuccessPage'
 import FarmerDashboardPage from './pages/farmer/FarmerDashboardPage'
 import MyBookingsPage from './pages/farmer/MyBookingsPage'
 import MyVehiclesPage from './pages/farmer/MyVehiclesPage'
+import BookingsPage from './pages/mandiOwner/BookingsPage'
+import MandiOwnerDashboardPage from './pages/mandiOwner/MandiOwnerDashboardPage'
+import QueueManagementPage from './pages/mandiOwner/QueueManagementPage'
+import ReportsPage from './pages/mandiOwner/ReportsPage'
 import { AuthProvider } from './store/authStore'
 
 function App() {
@@ -29,6 +33,10 @@ function App() {
           <Route path="/farmer/book-slot" element={<Layout isHomePage={false}><BookSlotPage /></Layout>} />
           <Route path="/farmer/booking-success" element={<Layout isHomePage={false}><BookingSuccessPage /></Layout>} />
           <Route path="/farmer/bookings" element={<Layout isHomePage={false}><MyBookingsPage /></Layout>} />
+          <Route path="/mandi-owner/dashboard" element={<Layout isHomePage={false}><MandiOwnerDashboardPage /></Layout>} />
+          <Route path="/mandi-owner/queue" element={<Layout isHomePage={false}><QueueManagementPage /></Layout>} />
+          <Route path="/mandi-owner/bookings" element={<Layout isHomePage={false}><BookingsPage /></Layout>} />
+          <Route path="/mandi-owner/reports" element={<Layout isHomePage={false}><ReportsPage /></Layout>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

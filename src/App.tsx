@@ -15,6 +15,11 @@ import BookingsPage from './pages/mandiOwner/BookingsPage'
 import MandiOwnerDashboardPage from './pages/mandiOwner/MandiOwnerDashboardPage'
 import QueueManagementPage from './pages/mandiOwner/QueueManagementPage'
 import ReportsPage from './pages/mandiOwner/ReportsPage'
+import ManageMandisPage from './pages/superAdmin/ManageMandisPage'
+import ManageOwnersPage from './pages/superAdmin/ManageOwnersPage'
+import PlatformAnalyticsPage from './pages/superAdmin/PlatformAnalyticsPage'
+import SuperAdminDashboardPage from './pages/superAdmin/SuperAdminDashboardPage'
+import SystemSettingsPage from './pages/superAdmin/SystemSettingsPage'
 import { AuthProvider } from './store/authStore'
 
 function App() {
@@ -37,6 +42,11 @@ function App() {
           <Route path="/mandi-owner/queue" element={<Layout isHomePage={false}><QueueManagementPage /></Layout>} />
           <Route path="/mandi-owner/bookings" element={<Layout isHomePage={false}><BookingsPage /></Layout>} />
           <Route path="/mandi-owner/reports" element={<Layout isHomePage={false}><ReportsPage /></Layout>} />
+          <Route path="/super-admin/dashboard" element={<Layout isHomePage={false}><SuperAdminDashboardPage /></Layout>} />
+          <Route path="/super-admin/mandis" element={<Layout isHomePage={false}><ManageMandisPage /></Layout>} />
+          <Route path="/super-admin/owners" element={<Layout isHomePage={false}><ManageOwnersPage /></Layout>} />
+          <Route path="/super-admin/analytics" element={<Layout isHomePage={false}><PlatformAnalyticsPage /></Layout>} />
+          <Route path="/super-admin/settings" element={<Layout isHomePage={false}><SystemSettingsPage /></Layout>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

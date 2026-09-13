@@ -13,6 +13,7 @@ function Footer() {
               {t('footer.tagline')}
             </p>
           </div>
+
           <div className="flex items-center gap-4 text-sm text-gray-600">
             <a href="#" className="transition-colors hover:text-green-700">
               {t('footer.privacyPolicy')}
@@ -24,6 +25,7 @@ function Footer() {
               {t('footer.contactUs')}
             </a>
           </div>
+
           <div className="text-center md:text-right">
             <p className="text-xs text-gray-500">
               {t('footer.copyright')}

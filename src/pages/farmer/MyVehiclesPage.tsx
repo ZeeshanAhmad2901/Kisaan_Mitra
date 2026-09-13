@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import type { Vehicle } from '../../types'
 
 const MOCK_VEHICLES: Vehicle[] = [
@@ -16,7 +15,6 @@ const VEHICLE_ICONS: Record<string, string> = {
 }
 
 function MyVehiclesPage() {
-  const { t } = useTranslation()
   const [vehicles, setVehicles] = useState<Vehicle[]>(MOCK_VEHICLES)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ vehicleType: 'tractor' as Vehicle['vehicleType'], vehicleNumber: '', capacity: '', capacityUnit: 'quintal' as Vehicle['capacityUnit'] })

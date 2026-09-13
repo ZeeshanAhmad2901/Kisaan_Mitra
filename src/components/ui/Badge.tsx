@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { cn } from '../../utils/cn'
 
 interface BadgeProps {
@@ -6,8 +7,6 @@ interface BadgeProps {
   size?: 'sm' | 'md'
   className?: string
 }
-
-import type { ReactNode } from 'react'
 
 const variantMap: Record<string, string> = {
   green: 'bg-green-50 text-green-700 border-green-200',
@@ -24,9 +23,21 @@ const sizeMap = {
   md: 'text-xs px-2 py-0.5',
 }
 
-function Badge({ children, variant = 'green', size = 'md', className }: BadgeProps) {
+function Badge({
+  children,
+  variant = 'green',
+  size = 'md',
+  className,
+}: BadgeProps) {
   return (
-    <span className={cn('inline-flex items-center font-medium rounded-full border capitalize', variantMap[variant], sizeMap[size], className)}>
+    <span
+      className={cn(
+        'inline-flex items-center font-medium rounded-full border capitalize',
+        variantMap[variant],
+        sizeMap[size],
+        className
+      )}
+    >
       {children}
     </span>
   )

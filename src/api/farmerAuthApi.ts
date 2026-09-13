@@ -15,7 +15,7 @@ const MOCK_FARMER = {
 }
 
 export async function farmerLogin(
-  emailOrPhone: string,
+  _emailOrPhone: string,
   _password: string
 ): Promise<LoginResponse> {
   await delay(800)

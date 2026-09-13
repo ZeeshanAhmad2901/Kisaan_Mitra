@@ -14,17 +14,33 @@ const MOCK_SLOTS: Slot[] = [
 
 export async function getSlots(mandiId?: string, date?: string): Promise<Slot[]> {
   await delay(600)
+
   let filtered = MOCK_SLOTS
-  if (mandiId) filtered = filtered.filter((s) => s.mandiId === mandiId)
-  if (date) filtered = filtered.filter((s) => s.date === date)
+
+  if (mandiId) {
+    filtered = filtered.filter((s) => s.mandiId === mandiId)
+  }
+
+  if (date) {
+    filtered = filtered.filter((s) => s.date === date)
+  }
+
   return filtered
 }
 
-export async function bookSlot(slotId: string, vehicleId: string, crop: string, quantity: string): Promise<{ bookingId: string }> {
+export async function bookSlot(
+  _slotId: string,
+  _vehicleId: string,
+  _crop: string,
+  _quantity: string
+): Promise<{ bookingId: string }> {
   await delay(1000)
-  return { bookingId: `KM-2025-${String(Math.floor(Math.random() * 90000) + 10000)}` }
+
+  return {
+    bookingId: `KM-2025-${String(Math.floor(Math.random() * 90000) + 10000)}`,
+  }
 }
 
-export async function cancelBooking(bookingId: string): Promise<void> {
+export async function cancelBooking(_bookingId: string): Promise<void> {
   await delay(500)
 }

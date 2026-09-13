@@ -71,4 +71,4 @@ function useToast() {
 }
 
 export { ToastProvider, useToast }
-export default Toast
+

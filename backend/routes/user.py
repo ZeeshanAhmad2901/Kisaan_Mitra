@@ -1,9 +1,11 @@
+from math import ceil
+
 from auth.roles import require_role
 from crud.user import (create_user, deactivate_user, get_all_users,
                        get_user_by_id, update_user)
 from database.connection import engine
 from fastapi import APIRouter, Depends, HTTPException, status
-from schemas.user import UserCreate, UserResponse, UserUpdate
+from schemas.user import UserCreate, UserListResponse, UserResponse, UserUpdate
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -38,13 +40,42 @@ def register_user(
             detail=str(exc),
         ) from exc
 
-@router.get("/", response_model=list[UserResponse])
+@router.get("/", response_model=UserListResponse)
 def list_users(
+    page: int = 1,
+    page_size: int = 10,
+    search: str | None = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("admin")),
 ):
-    return get_all_users(db)
+    if page < 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Page must be greater than or equal to 1",
+        )
 
+    if page_size < 1 or page_size > 100:
+        raise HTTPException(
+            status_code=400,
+            detail="Page size must be between 1 and 100",
+        )
+
+    users, total = get_all_users(
+        db,
+        page=page,
+        page_size=page_size,
+        search=search,
+    )
+
+    pages = ceil(total / page_size) if total else 0
+
+    return {
+        "items": users,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "pages": pages,
+    }
 
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(

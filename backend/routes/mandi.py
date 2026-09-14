@@ -1,10 +1,12 @@
+from math import ceil
+
 from auth.dependencies import get_current_user
 from auth.roles import require_role
 from crud.mandi import (create_mandi, deactivate_mandi, get_all_mandis,
                         get_mandi_by_id, update_mandi)
 from database.connection import engine
 from fastapi import APIRouter, Depends, HTTPException
-from schemas.mandi import MandiCreate, MandiResponse
+from schemas.mandi import MandiCreate, MandiListResponse, MandiResponse
 from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/mandis", tags=["Mandis"])
@@ -30,12 +32,45 @@ def register_mandi(
     current_user["user_id"],
 )
 
-@router.get("/", response_model=list[MandiResponse])
+from math import ceil
+
+
+@router.get("/", response_model=MandiListResponse)
 def list_mandis(
+    page: int = 1,
+    page_size: int = 10,
+    search: str | None = None,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
-    return get_all_mandis(db)
+    if page < 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Page must be greater than or equal to 1",
+        )
+
+    if page_size < 1 or page_size > 100:
+        raise HTTPException(
+            status_code=400,
+            detail="Page size must be between 1 and 100",
+        )
+
+    mandis, total = get_all_mandis(
+        db,
+        page=page,
+        page_size=page_size,
+        search=search,
+    )
+
+    pages = ceil(total / page_size) if total else 0
+
+    return {
+        "items": mandis,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "pages": pages,
+    }
 
 @router.put("/{mandi_id}", response_model=MandiResponse)
 def edit_mandi(

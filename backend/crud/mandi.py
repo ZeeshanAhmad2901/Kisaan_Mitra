@@ -21,8 +21,33 @@ def create_mandi(
     return db_mandi
 
 
-def get_all_mandis(db: Session) -> list[Mandi]:
-    return db.query(Mandi).filter(Mandi.is_active.is_(True)).all()
+def get_all_mandis(
+    db: Session,
+    page: int = 1,
+    page_size: int = 10,
+    search: str | None = None,
+) -> tuple[list[Mandi], int]:
+    query = db.query(Mandi).filter(Mandi.is_active.is_(True))
+
+    if search:
+        search_term = f"%{search.strip()}%"
+        query = query.filter(
+            (Mandi.name.ilike(search_term))
+            | (Mandi.location.ilike(search_term))
+        )
+
+    total = query.count()
+
+    offset = (page - 1) * page_size
+    mandis = (
+        query
+        .order_by(Mandi.id)
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+
+    return mandis, total
 
 
 def get_mandi_by_id(

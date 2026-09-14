@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from models.base import Base
-from sqlalchemy import Boolean, DateTime, Integer, String
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -9,9 +9,15 @@ class Vehicle(Base):
     __tablename__ = "vehicles"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    farmer_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    farmer_id: Mapped[int] = mapped_column(
+    Integer,
+    ForeignKey("users.id"),
+    nullable=False,
+    index=True,
+)
     driver_id: Mapped[int | None] = mapped_column(
     Integer,
+    ForeignKey("users.id"),
     nullable=True,
     index=True,
 )

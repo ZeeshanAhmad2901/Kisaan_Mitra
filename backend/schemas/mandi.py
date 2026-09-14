@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MandiBase(BaseModel):
@@ -15,8 +15,7 @@ class MandiResponse(MandiBase):
     id: int
     is_active: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class MandiListResponse(BaseModel):
     items: list[MandiResponse]

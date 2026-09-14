@@ -1,5 +1,30 @@
+from unittest.mock import patch
+
 from auth.password import hash_password, verify_password
 from auth.roles import require_role
+from fastapi.testclient import TestClient
+from main import app
+
+client = TestClient(app)
+
+
+def test_login_returns_429_when_ip_is_locked():
+    with patch(
+        "routes.login.is_login_locked",
+        return_value=True,
+    ):
+        response = client.post(
+            "/users/login",
+            data={
+                "username": "9999999901",
+                "password": "WrongPassword",
+            },
+        )
+
+    assert response.status_code == 429
+    assert response.json()["detail"] == (
+        "Too many failed login attempts. Try again later."
+    )
 
 
 def test_password_hash_and_verify():

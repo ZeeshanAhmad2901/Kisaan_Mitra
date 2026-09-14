@@ -31,8 +31,34 @@ def create_vehicle(
     return db_vehicle
 
 
-def get_all_vehicles(db: Session) -> list[Vehicle]:
-    return db.query(Vehicle).filter(Vehicle.is_active.is_(True)).all()
+def get_all_vehicles(
+    db: Session,
+    page: int = 1,
+    page_size: int = 10,
+    search: str | None = None,
+) -> tuple[list[Vehicle], int]:
+    query = db.query(Vehicle).filter(Vehicle.is_active.is_(True))
+
+    if search:
+        search_term = f"%{search.strip()}%"
+        query = query.filter(
+            (Vehicle.vehicle_number.ilike(search_term))
+            | (Vehicle.vehicle_type.ilike(search_term))
+        )
+
+    total = query.count()
+
+    offset = (page - 1) * page_size
+
+    vehicles = (
+        query
+        .order_by(Vehicle.id)
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+
+    return vehicles, total
 
 
 def get_vehicle_by_id(

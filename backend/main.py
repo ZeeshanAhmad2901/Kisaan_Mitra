@@ -1,3 +1,4 @@
+from error_handlers import unexpected_exception_handler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes.current_user import router as current_user_router
@@ -19,6 +20,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.add_exception_handler(
+    Exception,
+    unexpected_exception_handler,
+)
 app.include_router(transport_request_router)
 app.include_router(user_router)
 app.include_router(mandi_router)

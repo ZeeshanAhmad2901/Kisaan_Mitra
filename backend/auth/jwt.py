@@ -1,19 +1,8 @@
-import os
 from datetime import datetime, timedelta, timezone
 
-from dotenv import load_dotenv
 from jose import JWTError, jwt
 
-load_dotenv()
-
-SECRET_KEY = os.getenv("JWT_SECRET_KEY")
-ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(
-    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
-)
-
-if not SECRET_KEY:
-    raise RuntimeError("JWT_SECRET_KEY environment variable is required")
+from config import ACCESS_TOKEN_EXPIRE_MINUTES, JWT_ALGORITHM, JWT_SECRET_KEY
 
 
 def create_access_token(data: dict) -> str:
@@ -24,15 +13,19 @@ def create_access_token(data: dict) -> str:
     )
     to_encode.update({"exp": expire})
 
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(
+        to_encode,
+        JWT_SECRET_KEY,
+        algorithm=JWT_ALGORITHM,
+    )
 
 
 def decode_access_token(token: str) -> dict | None:
     try:
         return jwt.decode(
             token,
-            SECRET_KEY,
-            algorithms=[ALGORITHM],
+            JWT_SECRET_KEY,
+            algorithms=[JWT_ALGORITHM],
         )
     except JWTError:
         return None

@@ -26,8 +26,36 @@ def create_user(db: Session, user: UserCreate) -> User:
     return db_user
 
 
-def get_all_users(db: Session) -> list[User]:
-    return db.query(User).all()
+def get_all_users(
+    db: Session,
+    page: int = 1,
+    page_size: int = 10,
+    search: str | None = None,
+) -> tuple[list[User], int]:
+    query = db.query(User)
+
+    if search:
+        search_term = f"%{search.strip()}%"
+        query = query.filter(
+            (User.name.ilike(search_term))
+            | (User.phone.ilike(search_term))
+            | (User.email.ilike(search_term))
+            | (User.role.ilike(search_term))
+        )
+
+    total = query.count()
+
+    offset = (page - 1) * page_size
+
+    users = (
+        query
+        .order_by(User.id)
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
+
+    return users, total
 
 
 def get_user_by_id(db: Session, user_id: int) -> User | None:

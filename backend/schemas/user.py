@@ -18,6 +18,13 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True
+        
+class UserListResponse(BaseModel):
+    items: list[UserResponse]
+    total: int
+    page: int
+    page_size: int
+    pages: int        
 
 
 class UserUpdate(BaseModel):

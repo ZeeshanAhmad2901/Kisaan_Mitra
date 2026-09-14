@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class MandiBase(BaseModel):
-    name: str
-    location: str
+    name: str = Field(..., min_length=2, max_length=100)
+    location: str = Field(..., min_length=2, max_length=255)
     owner_id: int
 
 

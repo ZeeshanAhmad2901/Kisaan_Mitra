@@ -1,11 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class VehicleBase(BaseModel):
-    farmer_id: int
-    driver_id: int | None = None
-    vehicle_number: str
-    vehicle_type: str
+    farmer_id: int = Field(..., ge=1)
+    driver_id: int | None = Field(default=None, ge=1)
+    vehicle_number: str = Field(..., min_length=3, max_length=20)
+    vehicle_type: str = Field(..., min_length=2, max_length=50)
 
 
 class VehicleCreate(VehicleBase):

@@ -30,7 +30,13 @@ def register_user(
             detail="Public registration is only allowed for farmer and driver roles",
         )
 
-    return create_user(db, user)
+    try:
+        return create_user(db, user)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
 
 @router.get("/", response_model=list[UserResponse])
 def list_users(

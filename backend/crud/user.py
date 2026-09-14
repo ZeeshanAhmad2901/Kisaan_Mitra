@@ -1,6 +1,7 @@
 from auth.password import hash_password
 from models.user import User
 from schemas.user import UserCreate, UserUpdate
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 
@@ -14,8 +15,13 @@ def create_user(db: Session, user: UserCreate) -> User:
     )
 
     db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
+
+    try:
+        db.commit()
+        db.refresh(db_user)
+    except IntegrityError:
+        db.rollback()
+        raise ValueError("Phone number or email already exists") from None
 
     return db_user
 

@@ -45,14 +45,17 @@ def edit_mandi(
     current_user: dict = Depends(require_role("mandiOwner")),
 ):
     updated_mandi = update_mandi(
-    db,
-    mandi_id,
-    mandi,
-    current_user["user_id"],
-)
+        db,
+        mandi_id,
+        mandi,
+        current_user["user_id"],
+    )
 
     if updated_mandi is None:
-        raise HTTPException(status_code=404, detail="Mandi not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Mandi not found",
+        )
 
     return updated_mandi
 
@@ -64,12 +67,15 @@ def delete_mandi(
     current_user: dict = Depends(require_role("mandiOwner")),
 ):
     deleted_mandi = deactivate_mandi(
-    db,
-    mandi_id,
-    current_user["user_id"],
-)
+        db,
+        mandi_id,
+        current_user["user_id"],
+    )
 
     if deleted_mandi is None:
-        raise HTTPException(status_code=404, detail="Mandi not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Mandi not found",
+        )
 
     return {"message": "Mandi deactivated successfully"}

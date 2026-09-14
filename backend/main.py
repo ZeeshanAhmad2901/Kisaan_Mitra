@@ -1,3 +1,4 @@
+from database.connection import engine
 from error_handlers import unexpected_exception_handler
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +9,7 @@ from routes.protected import router as protected_router
 from routes.transport_request import router as transport_request_router
 from routes.user import router as user_router
 from routes.vehicle import router as vehicle_router
+from sqlalchemy import text
 
 from config import ALLOWED_ORIGINS
 
@@ -36,3 +38,20 @@ app.include_router(current_user_router)
 @app.get("/")
 def root():
     return {"message": "Kisaan Mitra API is running"}
+
+@app.get("/health")
+def health_check():
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+
+        return {
+            "status": "healthy",
+            "database": "connected",
+        }
+
+    except Exception:
+        return {
+            "status": "unhealthy",
+            "database": "unavailable",
+        }

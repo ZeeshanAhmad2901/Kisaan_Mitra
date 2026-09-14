@@ -24,7 +24,11 @@ def register_mandi(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("mandiOwner")),
 ):
-    return create_mandi(db, mandi)
+    return create_mandi(
+    db,
+    mandi,
+    current_user["user_id"],
+)
 
 @router.get("/", response_model=list[MandiResponse])
 def list_mandis(
@@ -40,7 +44,12 @@ def edit_mandi(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("mandiOwner")),
 ):
-    updated_mandi = update_mandi(db, mandi_id, mandi)
+    updated_mandi = update_mandi(
+    db,
+    mandi_id,
+    mandi,
+    current_user["user_id"],
+)
 
     if updated_mandi is None:
         raise HTTPException(status_code=404, detail="Mandi not found")
@@ -54,7 +63,11 @@ def delete_mandi(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("mandiOwner")),
 ):
-    deleted_mandi = deactivate_mandi(db, mandi_id)
+    deleted_mandi = deactivate_mandi(
+    db,
+    mandi_id,
+    current_user["user_id"],
+)
 
     if deleted_mandi is None:
         raise HTTPException(status_code=404, detail="Mandi not found")

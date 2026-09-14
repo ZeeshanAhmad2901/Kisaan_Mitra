@@ -22,9 +22,20 @@ def get_db():
 def register_vehicle(
     vehicle: VehicleCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role("driver"))
+    current_user: dict = Depends(require_role("driver")),
 ):
-    return create_vehicle(db, vehicle)
+    try:
+        return create_vehicle(
+            db,
+            vehicle,
+            current_user["user_id"],
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
+
 
 @router.get("/", response_model=list[VehicleResponse])
 def list_vehicles(
@@ -33,6 +44,7 @@ def list_vehicles(
 ):
     return get_all_vehicles(db)
 
+
 @router.put("/{vehicle_id}", response_model=VehicleResponse)
 def edit_vehicle(
     vehicle_id: int,
@@ -40,10 +52,24 @@ def edit_vehicle(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("driver")),
 ):
-    updated_vehicle = update_vehicle(db, vehicle_id, vehicle)
+    try:
+        updated_vehicle = update_vehicle(
+            db,
+            vehicle_id,
+            vehicle,
+            current_user["user_id"],
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=409,
+            detail=str(exc),
+        ) from exc
 
     if updated_vehicle is None:
-        raise HTTPException(status_code=404, detail="Vehicle not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Vehicle not found",
+        )
 
     return updated_vehicle
 
@@ -54,9 +80,16 @@ def delete_vehicle(
     db: Session = Depends(get_db),
     current_user: dict = Depends(require_role("driver")),
 ):
-    deleted_vehicle = deactivate_vehicle(db, vehicle_id)
+    deleted_vehicle = deactivate_vehicle(
+        db,
+        vehicle_id,
+        current_user["user_id"],
+    )
 
     if deleted_vehicle is None:
-        raise HTTPException(status_code=404, detail="Vehicle not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Vehicle not found",
+        )
 
     return {"message": "Vehicle deactivated successfully"}

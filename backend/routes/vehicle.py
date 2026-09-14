@@ -1,4 +1,4 @@
-from auth.dependencies import get_current_user
+from auth.roles import require_role
 from crud.vehicle import create_vehicle
 from database.connection import engine
 from fastapi import APIRouter, Depends
@@ -20,6 +20,6 @@ def get_db():
 def register_vehicle(
     vehicle: VehicleCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("driver"))
 ):
     return create_vehicle(db, vehicle)

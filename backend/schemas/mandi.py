@@ -17,3 +17,10 @@ class MandiResponse(MandiBase):
 
     class Config:
         from_attributes = True
+
+class MandiListResponse(BaseModel):
+    items: list[MandiResponse]
+    total: int
+    page: int
+    page_size: int
+    pages: int        

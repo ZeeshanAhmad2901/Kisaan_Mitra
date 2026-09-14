@@ -1,10 +1,9 @@
-from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-
+from auth.dependencies import get_current_user
 from crud.mandi import create_mandi
 from database.connection import engine
+from fastapi import APIRouter, Depends
 from schemas.mandi import MandiCreate, MandiResponse
-
+from sqlalchemy.orm import Session
 
 router = APIRouter(prefix="/mandis", tags=["Mandis"])
 
@@ -18,5 +17,9 @@ def get_db():
 
 
 @router.post("/", response_model=MandiResponse)
-def register_mandi(mandi: MandiCreate, db: Session = Depends(get_db)):
+def register_mandi(
+    mandi: MandiCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
     return create_mandi(db, mandi)

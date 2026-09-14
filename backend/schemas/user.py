@@ -18,3 +18,10 @@ class UserResponse(UserBase):
 
     class Config:
         from_attributes = True
+                
+class UserUpdate(BaseModel):
+    name: str | None = None
+    phone: str | None = None
+    email: EmailStr | None = None
+    role: str | None = None
+    is_active: bool | None = None        

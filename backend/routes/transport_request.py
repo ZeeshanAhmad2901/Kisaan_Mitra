@@ -9,6 +9,7 @@ from database.connection import engine
 from fastapi import APIRouter, Depends, HTTPException, status
 from schemas.transport_request import (TransportRequestCreate,
                                        TransportRequestResponse)
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 router = APIRouter(
@@ -41,13 +42,12 @@ def create_request(
             request_data,
             current_user["user_id"],
         )
-    except Exception:
+    except IntegrityError:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Unable to create transport request",
-        )
-
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Invalid farmer, mandi, or related database reference",
+        ) from None
 
 @router.get(
     "/my",

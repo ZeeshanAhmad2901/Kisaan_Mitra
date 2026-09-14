@@ -1,7 +1,6 @@
-from sqlalchemy.orm import Session
-
 from models.vehicle import Vehicle
 from schemas.vehicle import VehicleCreate
+from sqlalchemy.orm import Session
 
 
 def create_vehicle(db: Session, vehicle: VehicleCreate) -> Vehicle:
@@ -16,3 +15,7 @@ def create_vehicle(db: Session, vehicle: VehicleCreate) -> Vehicle:
     db.refresh(db_vehicle)
 
     return db_vehicle
+
+
+def get_all_vehicles(db: Session) -> list[Vehicle]:
+    return db.query(Vehicle).filter(Vehicle.is_active.is_(True)).all()

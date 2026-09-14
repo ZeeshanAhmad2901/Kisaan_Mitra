@@ -1,8 +1,7 @@
 from datetime import datetime
 
 from models.base import Base
-from sqlalchemy import (Date, DateTime, Enum, Float, ForeignKey, Integer,
-                        String, Text)
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 
@@ -62,7 +61,7 @@ class TransportRequest(Base):
     status: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
-        default="pending",
+        server_default=text("'pending'"),
         index=True,
     )
 

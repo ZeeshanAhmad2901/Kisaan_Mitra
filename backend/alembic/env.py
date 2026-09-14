@@ -3,6 +3,7 @@ from logging.config import fileConfig
 from alembic import context
 from database.connection import engine
 from models.base import Base
+from models.login_attempt import LoginAttempt  # noqa: F401
 from models.mandi import Mandi  # noqa: F401
 from models.transport_request import TransportRequest  # noqa: F401
 # Import every model so Base.metadata contains all tables.

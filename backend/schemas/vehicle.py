@@ -18,3 +18,10 @@ class VehicleResponse(VehicleBase):
 
     class Config:
         from_attributes = True
+
+class VehicleListResponse(BaseModel):
+    items: list[VehicleResponse]
+    total: int
+    page: int
+    page_size: int
+    pages: int

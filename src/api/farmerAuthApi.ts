@@ -71,7 +71,8 @@ export async function farmerRegister(
   name: string,
   email: string,
   phone: string,
-  password: string
+  password: string,
+  role: string
 ): Promise<RegisterResponse> {
   const response = await fetch(
     `${import.meta.env.VITE_API_BASE_URL}/users/`,
@@ -85,7 +86,7 @@ export async function farmerRegister(
         email,
         phone,
         password,
-        role: 'farmer',
+        role,
       }),
     }
   )

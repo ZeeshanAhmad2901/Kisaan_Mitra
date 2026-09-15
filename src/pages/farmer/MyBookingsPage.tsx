@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router'
 import { formatDate } from '../../utils/formatters'
 
@@ -15,6 +16,14 @@ const STATUS_STYLES: Record<string, string> = {
 }
 
 function MyBookingsPage() {
+  const [bookings] = useState(() => {
+    const storedBookings = JSON.parse(
+      localStorage.getItem('kisaan_mitra_bookings') ?? '[]',
+    )
+
+    return [...storedBookings, ...MOCK_BOOKINGS]
+  })
+
   return (
     <div className="px-4 py-8">
       <div className="max-w-4xl mx-auto">
@@ -31,7 +40,7 @@ function MyBookingsPage() {
           </Link>
         </div>
 
-        {MOCK_BOOKINGS.length === 0 ? (
+        {bookings.length === 0 ? (
           <div className="py-12 mt-8 text-center border border-gray-200 rounded-lg bg-gray-50">
             <span className="text-4xl">📋</span>
             <p className="mt-3 text-gray-500">No bookings yet</p>
@@ -41,7 +50,7 @@ function MyBookingsPage() {
           </div>
         ) : (
           <div className="mt-6 space-y-4">
-            {MOCK_BOOKINGS.map((booking) => (
+            {bookings.map((booking) => (
               <div key={booking.id} className="p-5 transition-shadow bg-white border border-gray-200 rounded-lg hover:shadow-md">
                 <div className="flex items-start justify-between">
                   <div>

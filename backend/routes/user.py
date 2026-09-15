@@ -24,7 +24,7 @@ def register_user(
     user: UserCreate,
     db: Session = Depends(get_db),
 ):
-    allowed_public_roles = {"farmer", "driver"}
+    allowed_public_roles = {"farmer", "driver", "mandiOwner"}
 
     if user.role not in allowed_public_roles:
         raise HTTPException(

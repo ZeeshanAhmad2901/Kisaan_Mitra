@@ -30,7 +30,7 @@ function RegisterPage() {
     clearError()
     if (!validate()) return
     await register({ name, email, phone, password, role })
-    navigate('/')
+    navigate('/login')
   }
 
   return (

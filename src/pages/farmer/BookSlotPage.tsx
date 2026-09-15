@@ -167,13 +167,37 @@ function BookSlotPage() {
   }
 
   const handleBook = async () => {
-    setLoading(true)
+  setLoading(true)
 
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+  await new Promise((resolve) => setTimeout(resolve, 1500))
 
-    setLoading(false)
-    navigate('/farmer/booking-success')
+  const bookingId = `KM-2025-${String(
+    Math.floor(Math.random() * 90000) + 10000,
+  )}`
+
+  const newBooking = {
+    id: bookingId,
+    mandiName: selectedMandiData?.name ?? 'Azadpur Mandi',
+    date: selectedSlotData?.date ?? '2025-09-01',
+    time: selectedSlotData?.time ?? '6:00 AM - 8:00 AM',
+    crop,
+    quantity: `${quantity} quintal`,
+    status: 'confirmed',
+    vehicleNumber: selectedVehicle?.vehicleNumber ?? '',
   }
+
+  const existingBookings = JSON.parse(
+    localStorage.getItem('kisaan_mitra_bookings') ?? '[]',
+  )
+
+  localStorage.setItem(
+    'kisaan_mitra_bookings',
+    JSON.stringify([newBooking, ...existingBookings]),
+  )
+
+  setLoading(false)
+  navigate('/farmer/booking-success')
+}
 
   return (
     <div className="px-4 py-8">

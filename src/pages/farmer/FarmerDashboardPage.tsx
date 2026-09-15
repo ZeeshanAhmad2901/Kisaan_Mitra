@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 import { getCropPrices } from '../../api/mandiApi'
 import type { CropPrice } from '../../types'
 import { formatDate, formatIndianCurrency } from '../../utils/formatters'
@@ -24,7 +25,21 @@ function FarmerDashboardPage() {
         <h1 className="text-2xl font-bold text-gray-900">
           {t('home.title')} - Dashboard
         </h1>
-        <p className="mt-1 text-gray-500">Welcome back, Rajesh</p>
+        <div className="flex flex-wrap gap-3 mt-5">
+  <Link
+    to="/farmer/book-slot"
+    className="px-5 py-2.5 text-sm font-medium text-white transition-colors bg-green-700 rounded-lg hover:bg-green-800"
+  >
+    Book Mandi Slot
+  </Link>
+
+  <Link
+    to="/farmer/bookings"
+    className="px-5 py-2.5 text-sm font-medium text-green-700 transition-colors border border-green-700 rounded-lg hover:bg-green-50"
+  >
+    My Bookings
+  </Link>
+</div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 gap-4 mt-8 md:grid-cols-4">

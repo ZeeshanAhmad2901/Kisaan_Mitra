@@ -25,12 +25,30 @@ function LoginPage() {
   }
 
   const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault()
-    clearError()
-    if (!validate()) return
-    await login({ emailOrPhone, password })
+  e.preventDefault()
+  clearError()
+
+  if (!validate()) return
+
+  const loggedInUser = await login({ emailOrPhone, password })
+
+  if (!loggedInUser) {
+    return
+  }
+
+  if (loggedInUser.role === 'farmer') {
+    navigate('/farmer/dashboard')
+  } else if (loggedInUser.role === 'mandiOwner') {
+    navigate('/mandi-owner/dashboard')
+  } else if (
+    loggedInUser.role === 'admin' ||
+    loggedInUser.role === 'superAdmin'
+  ) {
+    navigate('/super-admin/dashboard')
+  } else {
     navigate('/')
   }
+}
 
   return (
     <section className="px-4 py-16">

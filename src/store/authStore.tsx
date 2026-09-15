@@ -10,7 +10,7 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  login: (data: LoginRequest) => Promise<void>
+  login: (data: LoginRequest) => Promise<User | null>
   register: (data: RegisterRequest) => Promise<void>
   logout: () => void
   clearError: () => void
@@ -31,85 +31,83 @@ function AuthProvider({ children }: { children: ReactNode }) {
     }
   })
 
-  const login = async (data: LoginRequest) => {
+const login = async (data: LoginRequest): Promise<User | null> => {
+  setState((prev) => ({
+    ...prev,
+    isLoading: true,
+    error: null,
+  }))
+
+  try {
+    const response = await farmerLogin(
+      data.emailOrPhone,
+      data.password,
+    )
+
+    localStorage.setItem(
+      'kisaan_mitra_user',
+      JSON.stringify(response.user),
+    )
+
+    localStorage.setItem(
+      'kisaan_mitra_token',
+      response.token,
+    )
+
+    setState({
+      user: response.user,
+      token: response.token,
+      isLoading: false,
+      error: null,
+    })
+
+    return response.user
+  } catch {
     setState((prev) => ({
       ...prev,
-      isLoading: true,
-      error: null,
+      isLoading: false,
+      error: 'Invalid credentials. Please try again.',
     }))
 
-    try {
-      const response = await farmerLogin(
-        data.emailOrPhone,
-        data.password
-      )
-
-      localStorage.setItem(
-        'kisaan_mitra_user',
-        JSON.stringify(response.user)
-      )
-
-      localStorage.setItem(
-        'kisaan_mitra_token',
-        response.token
-      )
-
-      setState({
-        user: response.user,
-        token: response.token,
-        isLoading: false,
-        error: null,
-      })
-    } catch {
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: 'Invalid credentials. Please try again.',
-      }))
-    }
+    return null
   }
+}
 
   const register = async (data: RegisterRequest) => {
+  setState((prev) => ({
+    ...prev,
+    isLoading: true,
+    error: null,
+  }))
+
+  try {
+    await farmerRegister(
+      data.name,
+      data.email,
+      data.phone,
+      data.password,
+      data.role,
+    )
+
+    // Registration creates the account only.
+    // Authentication happens separately through Login.
     setState((prev) => ({
       ...prev,
-      isLoading: true,
+      user: null,
+      token: null,
+      isLoading: false,
       error: null,
     }))
-
-    try {
-      const response = await farmerRegister(
-        data.name,
-        data.email,
-        data.phone,
-        data.password
-      )
-
-      localStorage.setItem(
-        'kisaan_mitra_user',
-        JSON.stringify(response.user)
-      )
-
-      localStorage.setItem(
-        'kisaan_mitra_token',
-        response.token
-      )
-
-      setState({
-        user: response.user,
-        token: response.token,
-        isLoading: false,
-        error: null,
-      })
-    } catch {
-      setState((prev) => ({
-        ...prev,
-        isLoading: false,
-        error: 'Registration failed. Please try again.',
-      }))
-    }
+  } catch {
+    setState((prev) => ({
+      ...prev,
+      isLoading: false,
+      error: 'Registration failed. Please try again.',
+    }))
   }
+}
 
-  const logout = () => {
+    const logout = () => {
     localStorage.removeItem('kisaan_mitra_user')
     localStorage.removeItem('kisaan_mitra_token')
 

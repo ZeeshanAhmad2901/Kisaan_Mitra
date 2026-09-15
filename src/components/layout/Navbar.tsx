@@ -1,23 +1,41 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { useAuth } from '../../store/authStore'
 
 function Navbar() {
   const { t, i18n } = useTranslation()
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
-
+  const navigate = useNavigate()
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng)
   }
 
-  const navLinks = [
-    { to: '/', label: t('navbar.home') },
-    { to: '/about', label: t('navbar.about') },
-    { to: '/services', label: t('navbar.services') },
-    { to: '/contact', label: t('navbar.contact') },
-  ]
+  const navLinks = user
+  ? user.role === 'farmer'
+    ? [
+        { to: '/farmer/dashboard', label: 'Dashboard' },
+        { to: '/farmer/book-slot', label: 'Book Slot' },
+        { to: '/farmer/bookings', label: 'My Bookings' },
+      ]
+    : user.role === 'mandiOwner'
+      ? [
+          { to: '/mandi-owner/dashboard', label: 'Dashboard' },
+          { to: '/mandi-owner/queue', label: 'Queue Management' },
+        ]
+      : [
+          { to: '/', label: t('navbar.home') },
+          { to: '/about', label: t('navbar.about') },
+          { to: '/services', label: t('navbar.services') },
+          { to: '/contact', label: t('navbar.contact') },
+        ]
+  : [
+      { to: '/', label: t('navbar.home') },
+      { to: '/about', label: t('navbar.about') },
+      { to: '/services', label: t('navbar.services') },
+      { to: '/contact', label: t('navbar.contact') },
+    ]
 
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
@@ -49,7 +67,10 @@ function Navbar() {
 
           {user ? (
   <button
-    onClick={logout}
+  onClick={() => {
+    logout()
+    navigate('/')
+  }}
     className="hidden sm:inline-block bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-1.5 rounded transition-colors"
   >
     Logout

@@ -41,7 +41,6 @@ function LoginPage() {
   } else if (loggedInUser.role === 'mandiOwner') {
     navigate('/mandi-owner/dashboard')
   } else if (
-    loggedInUser.role === 'admin' ||
     loggedInUser.role === 'superAdmin'
   ) {
     navigate('/super-admin/dashboard')

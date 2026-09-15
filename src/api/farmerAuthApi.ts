@@ -1,5 +1,9 @@
 import type { LoginResponse, User } from '../types'
 
+type RegisterResponse = LoginResponse & {
+  message: string
+}
+
 export async function farmerLogin(
   phone: string,
   password: string

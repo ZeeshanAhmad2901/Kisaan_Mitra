@@ -111,11 +111,42 @@ const CROPS = [
   'Maize',
 ]
 
+const CROP_ICONS: Record<string, string> = {
+  Wheat: '🌾',
+  Rice: '🌾',
+  Mustard: '🌼',
+  Potato: '🥔',
+  Onion: '🧅',
+  Sugarcane: '🎋',
+  Soybean: '🌱',
+  Maize: '🌽',
+}
+
 const STEPS = [
-  'Select Mandi',
-  'Select Slot',
-  'Crop & Vehicle',
-  'Confirm',
+  {
+    number: '01',
+    title: 'Mandi',
+    description: 'Choose centre',
+    icon: '🏪',
+  },
+  {
+    number: '02',
+    title: 'Time Slot',
+    description: 'Choose visit time',
+    icon: '🕐',
+  },
+  {
+    number: '03',
+    title: 'Farm Details',
+    description: 'Crop & vehicle',
+    icon: '🌾',
+  },
+  {
+    number: '04',
+    title: 'Confirm',
+    description: 'Review booking',
+    icon: '✓',
+  },
 ]
 
 function BookSlotPage() {
@@ -167,368 +198,812 @@ function BookSlotPage() {
   }
 
   const handleBook = async () => {
-  setLoading(true)
+    setLoading(true)
 
-  await new Promise((resolve) => setTimeout(resolve, 1500))
+    await new Promise((resolve) => setTimeout(resolve, 1500))
 
-  const bookingId = `KM-2025-${String(
-    Math.floor(Math.random() * 90000) + 10000,
-  )}`
+    const bookingId = `KM-2025-${String(
+      Math.floor(Math.random() * 90000) + 10000,
+    )}`
 
-  const newBooking = {
-    id: bookingId,
-    mandiName: selectedMandiData?.name ?? 'Azadpur Mandi',
-    date: selectedSlotData?.date ?? '2025-09-01',
-    time: selectedSlotData?.time ?? '6:00 AM - 8:00 AM',
-    crop,
-    quantity: `${quantity} quintal`,
-    status: 'confirmed',
-    vehicleNumber: selectedVehicle?.vehicleNumber ?? '',
+    const newBooking = {
+      id: bookingId,
+      mandiName: selectedMandiData?.name ?? 'Azadpur Mandi',
+      date: selectedSlotData?.date ?? '2025-09-01',
+      time: selectedSlotData?.time ?? '6:00 AM - 8:00 AM',
+      crop,
+      quantity: `${quantity} quintal`,
+      status: 'confirmed',
+      vehicleNumber: selectedVehicle?.vehicleNumber ?? '',
+    }
+
+    const existingBookings = JSON.parse(
+      localStorage.getItem('kisaan_mitra_bookings') ?? '[]',
+    )
+
+    localStorage.setItem(
+      'kisaan_mitra_bookings',
+      JSON.stringify([newBooking, ...existingBookings]),
+    )
+
+    setLoading(false)
+    navigate('/farmer/booking-success')
   }
 
-  const existingBookings = JSON.parse(
-    localStorage.getItem('kisaan_mitra_bookings') ?? '[]',
-  )
+  const getAvailability = (slot: Slot) => {
+    const remaining = slot.totalSlots - slot.bookedSlots
 
-  localStorage.setItem(
-    'kisaan_mitra_bookings',
-    JSON.stringify([newBooking, ...existingBookings]),
-  )
+    if (!slot.isAvailable) {
+      return {
+        label: 'Full',
+        className: 'bg-red-50 text-red-700 border-red-200',
+      }
+    }
 
-  setLoading(false)
-  navigate('/farmer/booking-success')
-}
+    if (remaining <= 5) {
+      return {
+        label: `${remaining} left`,
+        className: 'bg-amber-50 text-amber-700 border-amber-200',
+      }
+    }
+
+    return {
+      label: `${remaining} available`,
+      className: 'bg-green-50 text-green-700 border-green-200',
+    }
+  }
 
   return (
-    <div className="px-4 py-8">
-      <div className="max-w-3xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900">
-          Book Mandi Slot
-        </h1>
-
-        <p className="mt-1 text-gray-500">
-          Book a time slot at your nearest mandi
-        </p>
-
-        {/* Step Indicator */}
-        <div className="flex items-center gap-2 mt-6">
-          {STEPS.map((stepName, index) => (
-            <div
-              key={stepName}
-              className="flex items-center flex-1 gap-2"
-            >
-              <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-medium ${
-                  index <= step
-                    ? 'bg-green-700 text-white'
-                    : 'bg-gray-200 text-gray-500'
-                }`}
-              >
-                {index < step ? '✓' : index + 1}
+    <div className="min-h-screen bg-gradient-to-b from-green-50 via-white to-slate-50">
+      {/* Page Header */}
+      <div className="bg-white border-b border-green-100">
+        <div className="max-w-6xl px-4 py-6 mx-auto sm:px-6 lg:px-8">
+          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 text-xs font-semibold tracking-wide text-green-800 uppercase border border-green-200 rounded-full bg-green-50">
+                <span>🌾</span>
+                Government Digital Agriculture Service
               </div>
 
-              <span
-                className={`text-sm hidden sm:block ${
-                  index <= step
-                    ? 'text-green-700 font-medium'
-                    : 'text-gray-400'
-                }`}
-              >
-                {stepName}
-              </span>
+              <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+                Book Your Mandi Visit
+              </h1>
 
-              {index < STEPS.length - 1 && (
-                <div
-                  className={`flex-1 h-0.5 ${
-                    index < step
-                      ? 'bg-green-700'
-                      : 'bg-gray-200'
-                  }`}
-                />
-              )}
+              <p className="max-w-2xl mt-2 text-sm leading-6 text-slate-500">
+                Reserve a procurement slot in advance and arrive at your mandi
+                at a planned time.
+              </p>
             </div>
-          ))}
-        </div>
 
-        {/* Step Content */}
-        <div className="p-6 mt-8 bg-white border border-gray-200 rounded-lg">
-          {/* Step 0: Select Mandi */}
-          {step === 0 && (
-            <div>
-              <h2 className="mb-4 font-bold text-gray-900">
-                Select a Mandi
-              </h2>
-
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                {MOCK_MANDIS.map((mandi) => (
-                  <button
-                    key={mandi.id}
-                    type="button"
-                    onClick={() => handleMandiSelect(mandi.id)}
-                    className={`p-4 rounded-lg border text-left transition-all ${
-                      selectedMandi === mandi.id
-                        ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
-                        : 'border-gray-200 hover:border-green-300'
-                    }`}
-                  >
-                    <p className="font-medium text-gray-900">
-                      🏪 {mandi.name}
-                    </p>
-
-                    <p className="mt-1 text-sm text-gray-500">
-                      {mandi.location}
-                    </p>
-                  </button>
-                ))}
+            <div className="flex items-center gap-3 p-3 border border-green-100 rounded-2xl bg-green-50/70">
+              <div className="flex items-center justify-center text-lg bg-white border border-green-100 w-11 h-11 rounded-xl">
+                🛡️
               </div>
-            </div>
-          )}
 
-          {/* Step 1: Select Slot */}
-          {step === 1 && (
-            <div>
-              <h2 className="mb-4 font-bold text-gray-900">
-                Select a Time Slot
-              </h2>
-
-              {selectedMandiData && (
-                <p className="mb-4 text-sm text-gray-500">
-                  Selected Mandi:{' '}
-                  <span className="font-medium text-gray-700">
-                    {selectedMandiData.name}
-                  </span>
+              <div>
+                <p className="text-xs font-semibold tracking-wide text-green-800 uppercase">
+                  Secure Booking
                 </p>
-              )}
-
-              {filteredSlots.length === 0 ? (
-                <p className="text-gray-500">
-                  No slots available for this mandi.
+                <p className="mt-0.5 text-xs text-green-700">
+                  Your visit is digitally recorded
                 </p>
-              ) : (
-                <div className="space-y-3">
-                  {filteredSlots.map((slot) => (
-                    <button
-                      key={slot.id}
-                      type="button"
-                      onClick={() => {
-                        if (slot.isAvailable) {
-                          setSelectedSlot(slot.id)
-                        }
-                      }}
-                      disabled={!slot.isAvailable}
-                      className={`w-full p-4 rounded-lg border text-left transition-all ${
-                        !slot.isAvailable
-                          ? 'border-gray-100 bg-gray-50 opacity-50 cursor-not-allowed'
-                          : selectedSlot === slot.id
-                            ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
-                            : 'border-gray-200 hover:border-green-300'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-gray-900">
-                            🕐 {slot.time}
-                          </p>
-
-                          <p className="mt-1 text-sm text-gray-500">
-                            📅 {slot.date}
-                          </p>
-                        </div>
-
-                        <div className="text-right">
-                          {slot.isAvailable ? (
-                            <span className="text-sm font-medium text-green-700">
-                              {slot.totalSlots - slot.bookedSlots} left
-                            </span>
-                          ) : (
-                            <span className="text-sm font-medium text-red-500">
-                              Full
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Step 2: Crop & Vehicle */}
-          {step === 2 && (
-            <div className="space-y-4">
-              <h2 className="font-bold text-gray-900">
-                Crop & Vehicle Details
-              </h2>
-
-              {/* Crop */}
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Crop
-                </label>
-
-                <select
-                  value={crop}
-                  onChange={(event) => setCrop(event.target.value)}
-                  className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                >
-                  <option value="">Select crop</option>
-
-                  {CROPS.map((cropName) => (
-                    <option key={cropName} value={cropName}>
-                      {cropName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Quantity */}
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Quantity (quintal)
-                </label>
-
-                <input
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={(event) => setQuantity(event.target.value)}
-                  placeholder="Enter quantity"
-                  className="w-full px-4 py-2.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-
-              {/* Vehicle */}
-              <div>
-                <label className="block mb-1 text-sm font-medium text-gray-700">
-                  Vehicle
-                </label>
-
-                <div className="space-y-2">
-                  {MOCK_VEHICLES.map((vehicle) => (
-                    <button
-                      key={vehicle.id}
-                      type="button"
-                      onClick={() => setVehicleId(vehicle.id)}
-                      className={`w-full p-3 rounded-lg border text-left flex items-center gap-3 transition-all ${
-                        vehicleId === vehicle.id
-                          ? 'border-green-500 bg-green-50 ring-2 ring-green-200'
-                          : 'border-gray-200 hover:border-green-300'
-                      }`}
-                    >
-                      <span className="text-xl">
-                        {vehicle.vehicleType === 'tractor'
-                          ? '🚜'
-                          : '🚛'}
-                      </span>
-
-                      <div>
-                        <p className="font-medium text-gray-900 capitalize">
-                          {vehicle.vehicleType} —{' '}
-                          {vehicle.vehicleNumber}
-                        </p>
-
-                        <p className="text-sm text-gray-500">
-                          Capacity: {vehicle.capacity}{' '}
-                          {vehicle.capacityUnit}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
               </div>
             </div>
-          )}
-
-          {/* Step 3: Confirm */}
-          {step === 3 && (
-            <div>
-              <h2 className="mb-4 font-bold text-gray-900">
-                Booking Summary
-              </h2>
-
-              <div className="p-5 space-y-3 border border-green-200 rounded-lg bg-green-50">
-                <div className="flex justify-between gap-4">
-                  <span className="text-gray-600">Mandi:</span>
-                  <span className="font-medium text-right text-gray-900">
-                    {selectedMandiData?.name}
-                  </span>
-                </div>
-
-                <div className="flex justify-between gap-4">
-                  <span className="text-gray-600">Date:</span>
-                  <span className="font-medium text-gray-900">
-                    {selectedSlotData?.date}
-                  </span>
-                </div>
-
-                <div className="flex justify-between gap-4">
-                  <span className="text-gray-600">Time:</span>
-                  <span className="font-medium text-gray-900">
-                    {selectedSlotData?.time}
-                  </span>
-                </div>
-
-                <div className="flex justify-between gap-4">
-                  <span className="text-gray-600">Crop:</span>
-                  <span className="font-medium text-gray-900">
-                    {crop}
-                  </span>
-                </div>
-
-                <div className="flex justify-between gap-4">
-                  <span className="text-gray-600">Quantity:</span>
-                  <span className="font-medium text-gray-900">
-                    {quantity} quintal
-                  </span>
-                </div>
-
-                <div className="flex justify-between gap-4">
-                  <span className="text-gray-600">Vehicle:</span>
-                  <span className="font-medium text-gray-900">
-                    {selectedVehicle?.vehicleNumber}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-6">
-            <button
-              type="button"
-              onClick={() => setStep(Math.max(0, step - 1))}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                step === 0
-                  ? 'invisible'
-                  : 'border border-gray-300 text-gray-700 hover:bg-gray-50'
-              }`}
-            >
-              Back
-            </button>
-
-            {step < 3 ? (
-              <button
-                type="button"
-                onClick={() => setStep(step + 1)}
-                disabled={!canNext()}
-                className="px-6 py-2 text-sm font-medium text-white transition-colors bg-green-700 rounded-lg hover:bg-green-800 disabled:bg-gray-300"
-              >
-                Next
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={handleBook}
-                disabled={loading}
-                className="px-6 py-2 text-sm font-medium text-white transition-colors bg-green-700 rounded-lg hover:bg-green-800 disabled:bg-green-400"
-              >
-                {loading ? 'Booking...' : 'Confirm Booking'}
-              </button>
-            )}
           </div>
         </div>
       </div>
+
+      <main className="max-w-6xl px-4 py-8 mx-auto sm:px-6 lg:px-8">
+        {/* Progress Stepper */}
+        <div className="p-4 mb-8 bg-white border shadow-sm rounded-2xl border-slate-200">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+            {STEPS.map((item, index) => {
+              const active = index === step
+              const completed = index < step
+
+              return (
+                <div key={item.number} className="relative">
+                  <div
+                    className={`flex items-center gap-3 rounded-xl p-3 border transition-all ${
+                      active
+                        ? 'border-green-300 bg-green-50'
+                        : completed
+                          ? 'border-green-200 bg-green-50/50'
+                          : 'border-slate-100 bg-slate-50'
+                    }`}
+                  >
+                    <div
+                      className={`flex items-center justify-center flex-shrink-0 w-10 h-10 rounded-xl text-sm font-bold ${
+                        completed || active
+                          ? 'bg-green-700 text-white'
+                          : 'bg-slate-200 text-slate-500'
+                      }`}
+                    >
+                      {completed ? '✓' : item.icon}
+                    </div>
+
+                    <div className="min-w-0">
+                      <p
+                        className={`text-xs font-bold uppercase tracking-wide ${
+                          active || completed
+                            ? 'text-green-800'
+                            : 'text-slate-400'
+                        }`}
+                      >
+                        Step {item.number}
+                      </p>
+
+                      <p
+                        className={`text-sm font-semibold truncate ${
+                          active ? 'text-slate-900' : 'text-slate-600'
+                        }`}
+                      >
+                        {item.title}
+                      </p>
+
+                      <p className="hidden text-xs text-slate-400 sm:block">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+          {/* Main Wizard */}
+          <div className="overflow-hidden bg-white border shadow-sm rounded-2xl border-slate-200">
+            {/* Wizard top bar */}
+            <div className="px-6 py-5 border-b border-slate-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
+                    Step {String(step + 1).padStart(2, '0')} of 04
+                  </p>
+
+                  <h2 className="mt-1 text-xl font-bold text-slate-900">
+                    {step === 0 && 'Select Procurement Centre'}
+                    {step === 1 && 'Choose Your Time Slot'}
+                    {step === 2 && 'Enter Farm Details'}
+                    {step === 3 && 'Review & Confirm'}
+                  </h2>
+                </div>
+
+                <div className="items-center justify-center hidden w-12 h-12 text-lg rounded-xl bg-green-50 sm:flex">
+                  {STEPS[step].icon}
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6 sm:p-8">
+              {/* STEP 0 */}
+              {step === 0 && (
+                <div>
+                  <div className="mb-6">
+                    <p className="text-sm text-slate-500">
+                      Select the mandi where you want to bring your produce for
+                      procurement.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {MOCK_MANDIS.map((mandi) => {
+                      const selected = selectedMandi === mandi.id
+
+                      return (
+                        <button
+                          key={mandi.id}
+                          type="button"
+                          onClick={() => handleMandiSelect(mandi.id)}
+                          className={`relative overflow-hidden text-left rounded-2xl border p-5 transition-all ${
+                            selected
+                              ? 'border-green-500 bg-green-50 shadow-md ring-2 ring-green-100'
+                              : 'border-slate-200 bg-white hover:border-green-300 hover:shadow-md'
+                          }`}
+                        >
+                          {selected && (
+                            <div className="absolute top-0 right-0 px-3 py-1 text-[10px] font-bold tracking-wider text-white uppercase bg-green-700 rounded-bl-xl">
+                              Selected
+                            </div>
+                          )}
+
+                          <div className="flex items-start gap-4">
+                            <div
+                              className={`flex items-center justify-center flex-shrink-0 w-12 h-12 text-xl rounded-xl ${
+                                selected
+                                  ? 'bg-green-700 text-white'
+                                  : 'bg-green-50 text-green-700'
+                              }`}
+                            >
+                              🏪
+                            </div>
+
+                            <div className="min-w-0">
+                              <h3 className="font-bold text-slate-900">
+                                {mandi.name}
+                              </h3>
+
+                              <p className="flex items-center gap-1 mt-1 text-sm text-slate-500">
+                                <span>📍</span>
+                                {mandi.location}
+                              </p>
+
+                              <div className="flex items-center gap-2 mt-3">
+                                <span className="px-2.5 py-1 text-[11px] font-semibold text-green-700 bg-white border border-green-200 rounded-full">
+                                  Procurement Centre
+                                </span>
+
+                                <span className="px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-full">
+                                  Online Booking
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 1 */}
+              {step === 1 && (
+                <div>
+                  {selectedMandiData && (
+                    <div className="flex items-center justify-between gap-4 p-4 mb-6 border border-green-200 rounded-xl bg-green-50">
+                      <div>
+                        <p className="text-xs font-semibold tracking-wide text-green-700 uppercase">
+                          Selected Centre
+                        </p>
+                        <p className="mt-1 font-bold text-slate-900">
+                          {selectedMandiData.name}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          📍 {selectedMandiData.location}
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setStep(0)}
+                        className="px-3 py-2 text-xs font-semibold text-green-700 bg-white border border-green-200 rounded-lg hover:bg-green-100"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    {filteredSlots.length === 0 ? (
+                      <div className="p-8 text-center border border-dashed rounded-2xl border-slate-300 bg-slate-50">
+                        <div className="text-3xl">🕐</div>
+                        <p className="mt-3 font-semibold text-slate-800">
+                          No slots available
+                        </p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          Try selecting another mandi.
+                        </p>
+                      </div>
+                    ) : (
+                      filteredSlots.map((slot) => {
+                        const selected = selectedSlot === slot.id
+                        const availability = getAvailability(slot)
+                        const remaining =
+                          slot.totalSlots - slot.bookedSlots
+                        const percentage =
+                          (slot.bookedSlots / slot.totalSlots) * 100
+
+                        return (
+                          <button
+                            key={slot.id}
+                            type="button"
+                            disabled={!slot.isAvailable}
+                            onClick={() => {
+                              if (slot.isAvailable) {
+                                setSelectedSlot(slot.id)
+                              }
+                            }}
+                            className={`w-full text-left rounded-2xl border p-5 transition-all ${
+                              !slot.isAvailable
+                                ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-60'
+                                : selected
+                                  ? 'border-green-500 bg-green-50 shadow-sm ring-2 ring-green-100'
+                                  : 'border-slate-200 hover:border-green-300 hover:shadow-sm'
+                            }`}
+                          >
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                              <div>
+                                <div className="flex items-center gap-3">
+                                  <div
+                                    className={`flex items-center justify-center w-11 h-11 rounded-xl ${
+                                      selected
+                                        ? 'bg-green-700 text-white'
+                                        : 'bg-slate-100 text-slate-700'
+                                    }`}
+                                  >
+                                    🕐
+                                  </div>
+
+                                  <div>
+                                    <p className="font-bold text-slate-900">
+                                      {slot.time}
+                                    </p>
+
+                                    <p className="mt-1 text-xs text-slate-500">
+                                      📅 {slot.date}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="sm:text-right">
+                                <span
+                                  className={`inline-flex items-center px-3 py-1.5 text-xs font-bold border rounded-full ${availability.className}`}
+                                >
+                                  {availability.label}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="mt-4">
+                              <div className="flex justify-between mb-1.5 text-[11px] text-slate-500">
+                                <span>Slot utilization</span>
+                                <span>
+                                  {slot.bookedSlots}/{slot.totalSlots} booked
+                                </span>
+                              </div>
+
+                              <div className="w-full h-2 overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                  className={`h-full rounded-full ${
+                                    !slot.isAvailable
+                                      ? 'bg-red-400'
+                                      : remaining <= 5
+                                        ? 'bg-amber-400'
+                                        : 'bg-green-500'
+                                  }`}
+                                  style={{ width: `${percentage}%` }}
+                                />
+                              </div>
+                            </div>
+                          </button>
+                        )
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2 */}
+              {step === 2 && (
+                <div className="space-y-8">
+                  {/* Crop */}
+                  <section>
+                    <div className="mb-4">
+                      <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
+                        Produce Information
+                      </p>
+                      <h3 className="mt-1 text-lg font-bold text-slate-900">
+                        What crop are you bringing?
+                      </h3>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                      {CROPS.map((cropName) => {
+                        const selected = crop === cropName
+
+                        return (
+                          <button
+                            key={cropName}
+                            type="button"
+                            onClick={() => setCrop(cropName)}
+                            className={`p-4 rounded-2xl border text-center transition-all ${
+                              selected
+                                ? 'border-green-500 bg-green-50 shadow-sm ring-2 ring-green-100'
+                                : 'border-slate-200 hover:border-green-300 hover:bg-green-50/50'
+                            }`}
+                          >
+                            <div className="text-2xl">
+                              {CROP_ICONS[cropName]}
+                            </div>
+
+                            <p
+                              className={`mt-2 text-sm font-semibold ${
+                                selected
+                                  ? 'text-green-800'
+                                  : 'text-slate-700'
+                              }`}
+                            >
+                              {cropName}
+                            </p>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </section>
+
+                  {/* Quantity */}
+                  <section>
+                    <div className="mb-3">
+                      <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
+                        Quantity
+                      </p>
+                      <h3 className="mt-1 text-lg font-bold text-slate-900">
+                        Expected produce quantity
+                      </h3>
+                    </div>
+
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="1"
+                        value={quantity}
+                        onChange={(event) => setQuantity(event.target.value)}
+                        placeholder="Enter quantity"
+                        className="w-full px-4 py-4 pr-24 text-base border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+
+                      <span className="absolute text-sm font-semibold -translate-y-1/2 top-1/2 right-4 text-slate-500">
+                        Quintal
+                      </span>
+                    </div>
+                  </section>
+
+                  {/* Vehicles */}
+                  <section>
+                    <div className="mb-4">
+                      <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
+                        Transport
+                      </p>
+                      <h3 className="mt-1 text-lg font-bold text-slate-900">
+                        Select your vehicle
+                      </h3>
+                    </div>
+
+                    <div className="space-y-3">
+                      {MOCK_VEHICLES.map((vehicle) => {
+                        const selected = vehicleId === vehicle.id
+
+                        return (
+                          <button
+                            key={vehicle.id}
+                            type="button"
+                            onClick={() => setVehicleId(vehicle.id)}
+                            className={`w-full p-4 rounded-2xl border text-left transition-all ${
+                              selected
+                                ? 'border-green-500 bg-green-50 shadow-sm ring-2 ring-green-100'
+                                : 'border-slate-200 hover:border-green-300'
+                            }`}
+                          >
+                            <div className="flex items-center gap-4">
+                              <div
+                                className={`flex items-center justify-center w-12 h-12 text-2xl rounded-xl ${
+                                  selected
+                                    ? 'bg-green-700 text-white'
+                                    : 'bg-slate-100'
+                                }`}
+                              >
+                                {vehicle.vehicleType === 'tractor'
+                                  ? '🚜'
+                                  : '🚛'}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <p className="font-bold uppercase text-slate-900">
+                                    {vehicle.vehicleNumber}
+                                  </p>
+
+                                  {vehicle.isDefault && (
+                                    <span className="px-2 py-1 text-[10px] font-bold text-green-700 bg-white border border-green-200 rounded-full">
+                                      DEFAULT
+                                    </span>
+                                  )}
+                                </div>
+
+                                <p className="mt-1 text-sm capitalize text-slate-500">
+                                  {vehicle.vehicleType} • Capacity:{' '}
+                                  {vehicle.capacity} {vehicle.capacityUnit}
+                                </p>
+                              </div>
+
+                              <div
+                                className={`flex items-center justify-center w-6 h-6 rounded-full border-2 ${
+                                  selected
+                                    ? 'border-green-700 bg-green-700'
+                                    : 'border-slate-300'
+                                }`}
+                              >
+                                {selected && (
+                                  <span className="text-xs text-white">✓</span>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </section>
+                </div>
+              )}
+
+              {/* STEP 3 */}
+              {step === 3 && (
+                <div>
+                  <div className="p-5 mb-6 border border-green-200 rounded-2xl bg-green-50">
+                    <div className="flex items-start gap-3">
+                      <div className="flex items-center justify-center w-10 h-10 text-lg text-white bg-green-700 rounded-xl">
+                        ✓
+                      </div>
+
+                      <div>
+                        <h3 className="font-bold text-green-900">
+                          Ready to confirm your mandi visit
+                        </h3>
+
+                        <p className="mt-1 text-sm text-green-700">
+                          Please verify the details below before confirming.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="overflow-hidden border rounded-2xl border-slate-200">
+                    <div className="px-5 py-4 border-b border-slate-200 bg-slate-50">
+                      <p className="text-xs font-semibold tracking-widest uppercase text-slate-500">
+                        Booking Summary
+                      </p>
+                    </div>
+
+                    <div className="divide-y divide-slate-100">
+                      <div className="flex items-start justify-between gap-6 p-5">
+                        <div>
+                          <p className="text-xs text-slate-400">Mandi</p>
+                          <p className="mt-1 font-semibold text-slate-900">
+                            {selectedMandiData?.name}
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            📍 {selectedMandiData?.location}
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => setStep(0)}
+                          className="text-xs font-semibold text-green-700"
+                        >
+                          Edit
+                        </button>
+                      </div>
+
+                      <div className="grid gap-5 p-5 sm:grid-cols-2">
+                        <div>
+                          <p className="text-xs text-slate-400">Date</p>
+                          <p className="mt-1 font-semibold text-slate-900">
+                            📅 {selectedSlotData?.date}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-xs text-slate-400">Time</p>
+                          <p className="mt-1 font-semibold text-slate-900">
+                            🕐 {selectedSlotData?.time}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-xs text-slate-400">Crop</p>
+                          <p className="mt-1 font-semibold text-slate-900">
+                            {CROP_ICONS[crop]} {crop}
+                          </p>
+                        </div>
+
+                        <div>
+                          <p className="text-xs text-slate-400">Quantity</p>
+                          <p className="mt-1 font-semibold text-slate-900">
+                            {quantity} quintal
+                          </p>
+                        </div>
+
+                        <div className="sm:col-span-2">
+                          <p className="text-xs text-slate-400">Vehicle</p>
+                          <p className="mt-1 font-semibold text-slate-900">
+                            {selectedVehicle?.vehicleNumber}
+                          </p>
+                          <p className="mt-1 text-xs capitalize text-slate-500">
+                            {selectedVehicle?.vehicleType} •{' '}
+                            {selectedVehicle?.capacity}{' '}
+                            {selectedVehicle?.capacityUnit}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Navigation */}
+              <div className="flex items-center justify-between pt-6 mt-8 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setStep(Math.max(0, step - 1))}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                    step === 0
+                      ? 'invisible'
+                      : 'border border-slate-300 text-slate-700 hover:bg-slate-50'
+                  }`}
+                >
+                  ← Back
+                </button>
+
+                {step < 3 ? (
+                  <button
+                    type="button"
+                    onClick={() => setStep(step + 1)}
+                    disabled={!canNext()}
+                    className="py-3 text-sm font-semibold text-white transition-all bg-green-700 px-7 rounded-xl hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    Continue →
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleBook}
+                    disabled={loading}
+                    className="py-3 text-sm font-semibold text-white transition-all bg-green-700 px-7 rounded-xl hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-green-400"
+                  >
+                    {loading ? 'Confirming Booking...' : '✓ Confirm Booking'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Side Summary */}
+          <aside className="lg:sticky lg:top-6 lg:self-start">
+            <div className="overflow-hidden bg-white border shadow-sm rounded-2xl border-slate-200">
+              <div className="px-5 py-4 border-b border-slate-100 bg-slate-50">
+                <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
+                  Your Booking
+                </p>
+                <h3 className="mt-1 font-bold text-slate-900">
+                  Visit Summary
+                </h3>
+              </div>
+
+              <div className="p-5 space-y-5">
+                {/* Mandi */}
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center justify-center text-sm rounded-lg w-9 h-9 bg-green-50">
+                    🏪
+                  </div>
+
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-semibold text-slate-400 uppercase">
+                      Mandi
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                      {selectedMandiData?.name ?? 'Not selected'}
+                    </p>
+
+                    {selectedMandiData && (
+                      <p className="text-xs text-slate-500">
+                        {selectedMandiData.location}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Slot */}
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center justify-center text-sm rounded-lg w-9 h-9 bg-green-50">
+                    🕐
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-400 uppercase">
+                      Visit Time
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                      {selectedSlotData?.time ?? 'Not selected'}
+                    </p>
+
+                    {selectedSlotData && (
+                      <p className="text-xs text-slate-500">
+                        {selectedSlotData.date}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Crop */}
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center justify-center text-sm rounded-lg w-9 h-9 bg-green-50">
+                    🌾
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-400 uppercase">
+                      Produce
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                      {crop || 'Not selected'}
+                    </p>
+
+                    {quantity && (
+                      <p className="text-xs text-slate-500">
+                        {quantity} quintal
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Vehicle */}
+                <div className="flex items-start gap-3">
+                  <div className="flex items-center justify-center text-sm rounded-lg w-9 h-9 bg-green-50">
+                    🚜
+                  </div>
+
+                  <div>
+                    <p className="text-[11px] font-semibold text-slate-400 uppercase">
+                      Vehicle
+                    </p>
+
+                    <p className="mt-1 text-sm font-semibold text-slate-900">
+                      {selectedVehicle?.vehicleNumber ?? 'Not selected'}
+                    </p>
+
+                    {selectedVehicle && (
+                      <p className="text-xs capitalize text-slate-500">
+                        {selectedVehicle.vehicleType}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Security note */}
+                <div className="p-4 mt-2 border border-green-100 rounded-xl bg-green-50">
+                  <div className="flex gap-2">
+                    <span>🛡️</span>
+
+                    <div>
+                      <p className="text-xs font-bold text-green-800">
+                        Secure digital booking
+                      </p>
+
+                      <p className="mt-1 text-[11px] leading-5 text-green-700">
+                        Your booking details will be stored digitally and can
+                        be viewed from My Bookings.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Help Card */}
+            <div className="p-5 mt-4 border bg-slate-900 rounded-2xl border-slate-800">
+              <p className="text-xs font-semibold tracking-widest text-green-300 uppercase">
+                Need help?
+              </p>
+
+              <p className="mt-2 text-sm font-semibold text-white">
+                Bring your registered vehicle and produce details.
+              </p>
+
+              <p className="mt-2 text-xs leading-5 text-slate-400">
+                Arrive during your confirmed slot to help maintain a smooth
+                procurement queue.
+              </p>
+            </div>
+          </aside>
+        </div>
+      </main>
     </div>
   )
 }

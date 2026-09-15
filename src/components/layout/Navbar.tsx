@@ -8,6 +8,7 @@ function Navbar() {
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const navigate = useNavigate()
+
   const changeLanguage = (lng: string) => {
     i18n.changeLanguage(lng)
   }
@@ -23,6 +24,8 @@ function Navbar() {
       ? [
           { to: '/mandi-owner/dashboard', label: 'Dashboard' },
           { to: '/mandi-owner/queue', label: 'Queue Management' },
+          { to: '/mandi-owner/bookings', label: 'Bookings' },
+          { to: '/mandi-owner/reports', label: 'Reports' },
         ]
       : [
           { to: '/', label: t('navbar.home') },
@@ -37,18 +40,30 @@ function Navbar() {
       { to: '/contact', label: t('navbar.contact') },
     ]
 
+  const handleLogout = () => {
+    logout()
+    navigate('/')
+  }
+
   return (
     <nav className="sticky top-0 z-50 bg-white border-b border-gray-200">
       <div className="flex items-center justify-between px-4 mx-auto max-w-7xl h-14">
-        {/* Logo */}
+
+        {/* Kisaan Mitra Brand */}
         <Link to="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold text-green-700">🌾 Kisaan Mitra</span>
+          <span className="text-xl font-bold text-green-700">
+            🌾 Kisaan Mitra
+          </span>
         </Link>
 
-        {/* Desktop Nav Items */}
+        {/* Desktop Nav */}
         <div className="items-center hidden gap-6 md:flex">
           {navLinks.map((link) => (
-            <Link key={link.to} to={link.to} className="text-sm font-medium text-gray-700 transition-colors hover:text-green-700">
+            <Link
+              key={link.to}
+              to={link.to}
+              className="text-sm font-medium text-gray-700 transition-colors hover:text-green-700"
+            >
               {link.label}
             </Link>
           ))}
@@ -66,23 +81,20 @@ function Navbar() {
           </select>
 
           {user ? (
-  <button
-  onClick={() => {
-    logout()
-    navigate('/')
-  }}
-    className="hidden sm:inline-block bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-1.5 rounded transition-colors"
-  >
-    Logout
-  </button>
-) : (
-  <Link
-    to="/login"
-    className="hidden sm:inline-block bg-green-700 hover:bg-green-800 text-white text-sm font-medium px-4 py-1.5 rounded transition-colors"
-  >
-    {t('navbar.login')}
-  </Link>
-)}
+            <button
+              onClick={handleLogout}
+              className="hidden px-4 py-1.5 text-sm font-medium text-white transition-colors bg-red-600 rounded sm:inline-block hover:bg-red-700"
+            >
+              Logout
+            </button>
+          ) : (
+            <Link
+              to="/login"
+              className="hidden px-4 py-1.5 text-sm font-medium text-white transition-colors bg-green-700 rounded sm:inline-block hover:bg-green-800"
+            >
+              {t('navbar.login')}
+            </Link>
+          )}
 
           {/* Mobile Hamburger */}
           <button
@@ -90,11 +102,26 @@ function Navbar() {
             className="p-1 text-gray-700 md:hidden"
             aria-label="Toggle menu"
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               {mobileOpen ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
               ) : (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               )}
             </svg>
           </button>
@@ -105,6 +132,7 @@ function Navbar() {
       {mobileOpen && (
         <div className="bg-white border-t border-gray-200 md:hidden">
           <div className="px-4 py-3 space-y-1">
+
             {navLinks.map((link) => (
               <Link
                 key={link.to}
@@ -115,6 +143,7 @@ function Navbar() {
                 {link.label}
               </Link>
             ))}
+
             <div className="pt-2 border-t border-gray-100">
               <select
                 value={i18n.language}
@@ -124,13 +153,26 @@ function Navbar() {
                 <option value="en">{t('navbar.english')}</option>
                 <option value="hi">{t('navbar.hindi')}</option>
               </select>
-              <Link
-                to="/login"
-                onClick={() => setMobileOpen(false)}
-                className="block px-4 py-2 text-sm font-medium text-center text-white transition-colors bg-green-700 rounded hover:bg-green-800"
-              >
-                {t('navbar.login')}
-              </Link>
+
+              {user ? (
+                <button
+                  onClick={() => {
+                    handleLogout()
+                    setMobileOpen(false)
+                  }}
+                  className="block w-full px-4 py-2 text-sm font-medium text-center text-white bg-red-600 rounded hover:bg-red-700"
+                >
+                  Logout
+                </button>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setMobileOpen(false)}
+                  className="block px-4 py-2 text-sm font-medium text-center text-white bg-green-700 rounded hover:bg-green-800"
+                >
+                  {t('navbar.login')}
+                </Link>
+              )}
             </div>
           </div>
         </div>

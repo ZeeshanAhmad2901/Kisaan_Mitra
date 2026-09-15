@@ -1,10 +1,9 @@
 {
   "topStrip": {
     "ashokaStambh": "Ashoka Stambh",
-    "governmentOfIndia": "Government of India",
-    "pmModi": "PM Modi",
-    "primeMinister": "Prime Minister of India"
+    "governmentOfIndia": "Government of India"
   },
+
   "navbar": {
     "home": "Home",
     "about": "About",
@@ -12,52 +11,303 @@
     "contact": "Contact",
     "login": "Login",
     "english": "English",
-    "hindi": "हिन्दी"
+    "hindi": "Hindi"
   },
+
   "home": {
-    "title": "Kisaan Mitra",
-    "subtitle": "Empowering Indian Farmers with Technology",
-    "quote": "Service to farmers is the greatest service of all",
-    "getStarted": "Get Started",
-    "learnMore": "Learn More"
-  },
-  "about": {
-    "title": "About Kisaan Mitra",
-    "description": "Kisaan Mitra is a digital platform designed to empower Indian farmers by providing access to mandi prices, government schemes, and direct market connectivity — all in their own language.",
+    "platform": "Digital Mandi Access Platform",
+    "heroTitle": "Smart Mandi Access.",
+    "heroHighlight": "Simple. Transparent.",
+    "heroDescription": "Book your mandi slot before you arrive, get a digital QR token, reduce unnecessary waiting and make mandi operations more organized.",
+    "bookSlot": "Book a Mandi Slot",
+    "exploreMandis": "Explore Mandis",
+    "digitalBooking": "Digital booking",
+    "qrToken": "QR token",
+    "organizedQueue": "Organized queue",
+
+    "farmersServed": "Farmers Served",
+    "mandisConnected": "Mandis Connected",
+    "slotsManaged": "Slots Managed",
+
+    "whyLabel": "Why Kisaan Mitra",
+    "whyTitle": "One platform for a smarter mandi journey.",
+    "whyDescription": "From booking and digital tokens to queue coordination and market information, Kisaan Mitra connects the most important parts of the mandi visit in one place.",
+
+    "smartSlotBooking": "Smart Slot Booking",
+    "smartSlotBookingDesc": "Choose your mandi and reserve a convenient time before you arrive.",
+    "digitalQrToken": "Digital QR Token",
+    "digitalQrTokenDesc": "Get a digital booking token that can be scanned at the mandi gate.",
+    "queueManagement": "Queue Management",
+    "queueManagementDesc": "Reduce unnecessary waiting with organized mandi-side processing.",
+    "liveCropPrices": "Live Crop Prices",
+    "liveCropPricesDesc": "Check mandi-wise crop prices before planning your visit.",
+    "transparentOperations": "Transparent Operations",
+    "transparentOperationsDesc": "Keep booking, arrival and processing information organized.",
+    "fasterProcessing": "Faster Processing",
+    "fasterProcessingDesc": "Help farmers and mandi teams coordinate arrivals more efficiently.",
+
+    "howLabel": "How It Works",
+    "howTitle": "From booking to mandi in five simple steps.",
+    "selectMandi": "Select Mandi",
+    "selectMandiDesc": "Choose the mandi that fits your route and requirement.",
+    "chooseSlot": "Choose Slot",
+    "chooseSlotDesc": "Pick an available time slot before travelling.",
+    "addDetails": "Add Details",
+    "addDetailsDesc": "Select your crop, quantity and registered vehicle.",
+    "getQrToken": "Get QR Token",
+    "getQrTokenDesc": "Receive your digital booking confirmation instantly.",
+    "reachProcess": "Reach & Process",
+    "reachProcessDesc": "Show the token and move through the mandi workflow.",
+
+    "snapshotLabel": "Mandi Snapshot",
+    "snapshotTitle": "Know the market before you arrive.",
+    "snapshotDescription": "Get a quick view of current crop prices available through the platform.",
+    "modal": "Modal",
+    "perQuintal": "per quintal",
+
+    "builtLabel": "Built for Everyone",
+    "builtTitle": "One platform. Two connected experiences.",
     "forFarmers": "For Farmers",
-    "forFarmersDesc": "Real-time mandi prices and schemes",
+    "farmerTitle": "Plan your mandi visit before you travel.",
+    "farmerDescription": "Book your slot, select crop and vehicle details, receive a QR token and keep track of your bookings.",
+    "booking": "Booking",
+    "slotBased": "Slot based",
+    "token": "Token",
+    "digital": "Digital QR",
+    "bookYourSlot": "Book Your Slot",
+
     "forMandiOwners": "For Mandi Owners",
-    "forMandiOwnersDesc": "Manage mandi operations digitally",
-    "forGovernment": "For Government",
-    "forGovernmentDesc": "Monitor and support agriculture"
+    "mandiOwnerTitle": "Keep arrivals and queues organized.",
+    "mandiOwnerDescription": "Monitor today's arrivals, view bookings, manage queue movement and track processing status from one dashboard.",
+    "queue": "Queue",
+    "liveStatus": "Live status",
+    "arrivals": "Arrivals",
+    "organized": "Organized",
+    "mandiOwnerLogin": "Mandi Owner Login",
+
+    "ctaLabel": "Ready to simplify the mandi journey?",
+    "ctaTitle": "Skip the unnecessary queue.",
+    "ctaHighlight": "Plan your mandi visit smarter.",
+    "ctaDescription": "Book your slot, get your token and arrive prepared.",
+    "startBooking": "Start Booking",
+
+    "footerDescription": "Smarter mandi access for farmers and mandi operators."
   },
+
+  "about": {
+    "heroLabel": "About Kisaan Mitra",
+    "heroTitle": "A smarter digital bridge between",
+    "heroHighlight": "farmers and mandis.",
+    "heroDescription": "Kisaan Mitra is designed to bring mandi booking, digital tokens, queue coordination and market information into one connected digital experience.",
+
+    "purposeLabel": "Our Purpose",
+    "purposeTitle": "Making the mandi journey more organized.",
+    "purposeDescription": "Kisaan Mitra brings booking, arrival and queue handling into a connected digital workflow for farmers and mandi operators.",
+
+    "book": "Book",
+    "bookDesc": "Reserve an appropriate mandi slot.",
+    "token": "Token",
+    "tokenDesc": "Receive a digital booking token.",
+    "arrive": "Arrive",
+    "arriveDesc": "Reach the mandi with your booking details.",
+    "process": "Process",
+    "processDesc": "Move through the organized workflow.",
+
+    "challengeLabel": "The Challenge",
+    "challengeTitle": "Turning a fragmented mandi visit into a connected workflow.",
+    "unplannedArrivals": "Unplanned arrivals",
+    "unplannedArrivalsDesc": "Farmers may have limited visibility into suitable arrival times before travelling to a mandi.",
+    "waitingQueues": "Waiting and queues",
+    "waitingQueuesDesc": "Manual coordination can make arrivals and processing harder to organize.",
+    "disconnectedInformation": "Disconnected information",
+    "disconnectedInformationDesc": "Booking, crop details, vehicle information and processing status may exist in separate workflows.",
+
+    "solutionLabel": "Our Solution",
+    "solutionTitle": "One digital platform connecting the complete mandi journey.",
+    "solutionDescription": "Kisaan Mitra connects the farmer-facing booking experience with the mandi-side operational workflow.",
+
+    "farmerExperience": "Farmer Experience",
+    "planBeforeArrive": "Plan before you arrive.",
+    "selectMandiSlot": "Select mandi and slot",
+    "addCropVehicle": "Add crop and vehicle details",
+    "receiveQr": "Receive digital QR confirmation",
+    "trackBookings": "Track booking information",
+    "viewPrices": "View mandi crop prices",
+
+    "mandiOwnerExperience": "Mandi Owner Experience",
+    "organizeArrivals": "Organize arrivals and processing.",
+    "monitorArrivals": "Monitor today's arrivals",
+    "viewBookings": "View confirmed bookings",
+    "manageQueue": "Manage queue movement",
+    "updateStatus": "Update processing status",
+    "coordinateWorkflow": "Coordinate the mandi workflow",
+
+    "capabilitiesLabel": "Platform Capabilities",
+    "capabilitiesTitle": "Built around the real mandi workflow.",
+
+    "stakeholdersLabel": "Connected Ecosystem",
+    "stakeholdersTitle": "Designed around shared information.",
+    "farmers": "Farmers",
+    "farmersDesc": "Get a more planned and predictable mandi visit with digital booking and token information.",
+    "mandiOwners": "Mandi Owners",
+    "mandiOwnersDesc": "Manage arrivals, queue movement and processing status from a connected operational dashboard.",
+    "governance": "Governance",
+    "governanceDesc": "A structured digital workflow can provide clearer operational information across the mandi ecosystem.",
+
+    "visionLabel": "Our Vision",
+    "visionTitle": "Make every mandi visit more planned, connected and transparent.",
+    "visionDescription": "Kisaan Mitra aims to create a digital-first mandi experience where farmers can plan their visits and mandi teams can organize arrivals using a shared operational workflow.",
+    "createAccount": "Create an Account",
+    "explore": "Explore Kisaan Mitra",
+
+    "ctaTitle": "A connected digital journey from",
+    "ctaHighlight": "booking to mandi processing.",
+    "ctaDescription": "Explore the platform and experience the workflow built for farmers and mandi operators.",
+    "startJourney": "Start Your Mandi Journey"
+  },
+
   "services": {
-    "title": "Our Services",
-    "subtitle": "Everything a farmer needs, in one place",
-    "livePrices": "Live Mandi Prices",
-    "livePricesDesc": "Check real-time crop prices across all mandis",
-    "schemes": "Government Schemes",
-    "schemesDesc": "Browse and apply for farmer welfare schemes",
-    "helpline": "Helpline Support",
-    "helplineDesc": "24/7 support in Hindi and English",
-    "weather": "Weather Updates",
-    "weatherDesc": "Local weather forecasts for better planning",
-    "equipment": "Equipment Sharing",
-    "equipmentDesc": "Rent or share farming equipment nearby",
-    "training": "Training & Guides",
-    "trainingDesc": "Learn modern farming techniques"
+    "heroLabel": "Kisaan Mitra Services",
+    "heroTitle": "Digital services for a",
+    "heroHighlight": "smarter mandi journey.",
+    "heroDescription": "Everything a farmer needs, in one place.",
+    "bookSlot": "Book a Mandi Slot",
+    "accessDashboard": "Access Dashboard",
+
+    "platformLabel": "Platform Services",
+    "platformTitle": "Everything you need in one connected platform.",
+    "platformDescription": "Kisaan Mitra combines useful mandi information with digital workflows for farmers and mandi operators.",
+    "coreServices": "Core Services",
+    "digitalAccess": "Digital Access",
+    "digitalTokens": "Digital Tokens",
+    "liveInformation": "Live Information",
+
+    "whatOfferLabel": "What We Offer",
+    "whatOfferTitle": "Services built around real mandi needs.",
+    "whatOfferDescription": "Explore the major digital capabilities available through the Kisaan Mitra platform.",
+    "service": "Service",
+    "learnMoreArrow": "Learn more →",
+
+    "farmerLabel": "For Farmers",
+    "farmerServiceTitle": "Plan the visit before you reach the mandi.",
+    "farmerServiceDescription": "Use digital services to prepare your mandi visit with better visibility of slots, prices, bookings and confirmation details.",
+    "qrConfirmation": "QR Confirmation",
+    "cropPrices": "Crop Prices",
+    "bookings": "Bookings",
+    "reserveWindow": "Reserve an arrival window.",
+    "carryToken": "Carry your digital token.",
+    "checkMarket": "Check available market information.",
+    "trackVisits": "Keep track of your visits.",
+    "farmerJourney": "Farmer Journey",
+    "simpleDigitalFlow": "Simple digital flow",
+
+    "mandiOwnerLabel": "For Mandi Owners",
+    "mandiOwnerServiceTitle": "Coordinate mandi operations from one dashboard.",
+    "mandiOwnerServiceDescription": "Keep track of arrivals, bookings, queue movement and processing status through an operational workflow designed for mandi teams.",
+    "todayArrivals": "Today's Arrivals",
+    "activeQueue": "Active Queue",
+    "completed": "Completed",
+    "monitorToday": "Monitor today's arrivals",
+    "trackQueue": "Manage queue movement",
+    "trackProcessing": "Track processing status",
+
+    "ctaLabel": "Kisaan Mitra",
+    "ctaTitle": "One platform for a more connected mandi experience.",
+    "ctaDescription": "Explore the services and start using the digital mandi workflow.",
+    "learnAbout": "Learn About Kisaan Mitra"
   },
+
   "contact": {
-    "title": "Contact Us",
-    "subtitle": "We're here to help Indian farmers",
-    "name": "Name",
-    "namePlaceholder": "Enter your name",
-    "email": "Email",
-    "emailPlaceholder": "Enter your email",
-    "message": "Message",
-    "messagePlaceholder": "Write your message...",
-    "send": "Send Message"
+    "heroLabel": "Contact Kisaan Mitra",
+    "heroTitle": "Let's build a smarter",
+    "heroHighlight": "mandi experience together.",
+    "heroDescription": "Have a question, suggestion or issue? Send us a message and we'll help you navigate the Kisaan Mitra platform.",
+
+    "getInTouch": "Get in Touch",
+    "howHelp": "How can we help?",
+    "helpDescription": "Whether you're a farmer, mandi owner or someone exploring the platform, we're here to help.",
+
+    "farmerSupport": "Farmer Support",
+    "farmerSupportDesc": "Questions about booking slots, QR tokens, vehicles, crop prices or your bookings.",
+    "mandiSupport": "Mandi Owner Support",
+    "mandiSupportDesc": "Need help with bookings, queue management or processing status?",
+    "quickAccess": "Quick Access",
+    "quickAccessDesc": "You can also explore the platform directly before contacting the support team.",
+    "exploreKisaan": "Explore Kisaan Mitra",
+
+    "sendMessage": "Send us a message",
+    "sendMessageDesc": "Fill in the details below and submit your request.",
+    "subject": "Subject",
+    "selectTopic": "Select a topic",
+    "bookingQr": "Booking & QR Token",
+    "mandiOwnerSupport": "Mandi Owner Support",
+    "prices": "Crop Prices",
+    "accountLogin": "Account & Login",
+    "suggestion": "Suggestion / Feedback",
+    "other": "Other",
+
+    "successTitle": "Message submitted successfully.",
+    "successDescription": "Thank you for contacting Kisaan Mitra.",
+    "securityNote": "Please avoid sharing passwords, OTPs or other sensitive account information.",
+
+    "supportOptions": "Support Options",
+    "supportTitle": "Find the right place to start.",
+    "farmerHelp": "Farmer Help",
+    "farmerHelpDesc": "Learn more about booking a mandi slot and tracking your bookings.",
+    "bookSlotArrow": "Book a slot →",
+    "mandiOwnerHelp": "Mandi Owner Help",
+    "mandiOwnerHelpDesc": "Access your dashboard and manage queue and booking operations.",
+    "openLogin": "Open login →",
+    "explorePlatform": "Explore the Platform",
+    "explorePlatformDesc": "See how Kisaan Mitra connects booking, mandi operations and market information.",
+    "learnMoreArrow": "Learn more →",
+
+    "ctaLabel": "Kisaan Mitra Support",
+    "ctaTitle": "Need help with your mandi journey?",
+    "ctaDescription": "Explore the platform or send us a message whenever you need assistance.",
+    "backHome": "Back to Home"
   },
+
+  "legal": {
+    "legal": "Legal",
+    "privacyTitle": "Privacy Policy",
+    "privacySubtitle": "Information about how Kisaan Mitra handles information provided through the platform.",
+    "termsTitle": "Terms of Use",
+    "termsSubtitle": "Basic terms governing use of the Kisaan Mitra platform.",
+
+    "privacyInformation": "Information We Collect",
+    "privacyInformationDesc": "Kisaan Mitra may collect information such as name, phone number, email address, crop details, vehicle information and booking details when you use the platform.",
+    "privacyUsage": "How Information Is Used",
+    "privacyUsageDesc": "Information may be used to create accounts, process bookings, generate digital tokens, manage mandi workflows and provide platform-related services.",
+    "privacyProtection": "Data Protection",
+    "privacyProtectionDesc": "Appropriate technical and organizational measures should be used to protect account and booking information from unauthorized access or misuse.",
+    "privacyThirdParty": "Third-Party Services",
+    "privacyThirdPartyDesc": "The platform may integrate with external services where required for specific functionality. Their respective terms may also apply.",
+    "privacyContact": "Contact",
+    "privacyContactDesc": "Questions regarding privacy can be submitted through the Contact page.",
+
+    "termsPlatform": "Use of the Platform",
+    "termsPlatformDesc": "Users should provide accurate information and use Kisaan Mitra only for legitimate mandi-related activities.",
+    "termsAccount": "Account Responsibility",
+    "termsAccountDesc": "Users are responsible for maintaining the confidentiality of their login credentials and for activity carried out through their account.",
+    "termsBooking": "Booking Information",
+    "termsBookingDesc": "Slot availability, booking information and mandi operations may change. Users should review the information shown on the platform before relying on it for travel or operational planning.",
+    "termsAcceptable": "Acceptable Use",
+    "termsAcceptableDesc": "Users should not attempt to misuse, disrupt, reverse engineer or gain unauthorized access to the platform or another user's account.",
+    "termsChanges": "Changes to These Terms",
+    "termsChangesDesc": "These terms may be updated as the Kisaan Mitra platform evolves."
+  },
+
+  "footer": {
+    "tagline": "Empowering Indian Farmers",
+    "quickLinks": "Quick Links",
+    "legal": "Legal",
+    "privacyPolicy": "Privacy Policy",
+    "termsOfUse": "Terms of Use",
+    "contactUs": "Contact Us",
+    "digitalPlatform": "Digital Mandi Management Platform"
+  },
+
   "login": {
     "title": "Login",
     "subtitle": "Access your Kisaan Mitra account",
@@ -70,12 +320,5 @@
     "loginButton": "Login",
     "noAccount": "Don't have an account?",
     "register": "Register"
-  },
-  "footer": {
-    "tagline": "Empowering Indian Farmers",
-    "privacyPolicy": "Privacy Policy",
-    "termsOfUse": "Terms of Use",
-    "contactUs": "Contact Us",
-    "copyright": "© 2025 Kisaan Mitra, Government of India"
   }
 }

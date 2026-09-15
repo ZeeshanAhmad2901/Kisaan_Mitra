@@ -6,7 +6,9 @@ import AboutPage from './pages/common/AboutPage'
 import ContactPage from './pages/common/ContactPage'
 import HomePage from './pages/common/HomePage'
 import NotFoundPage from './pages/common/NotFoundPage'
+import PrivacyPolicyPage from './pages/common/PrivacyPolicyPage'
 import ServicesPage from './pages/common/ServicesPage'
+import TermsOfUsePage from './pages/common/TermsOfUsePage'
 import BookSlotPage from './pages/farmer/BookSlotPage'
 import BookingSuccessPage from './pages/farmer/BookingSuccessPage'
 import FarmerDashboardPage from './pages/farmer/FarmerDashboardPage'
@@ -49,6 +51,15 @@ function App() {
           <Route path="/super-admin/analytics" element={<Layout isHomePage={false}><PlatformAnalyticsPage /></Layout>} />
           <Route path="/super-admin/settings" element={<Layout isHomePage={false}><SystemSettingsPage /></Layout>} />
           <Route path="*" element={<Layout isHomePage={false}><NotFoundPage /></Layout>} />
+          <Route
+  path="/privacy-policy"
+  element={<PrivacyPolicyPage />}
+/>
+
+<Route
+  path="/terms-of-use"
+  element={<TermsOfUsePage />}
+/>
         </Routes>
       </BrowserRouter>
     </AuthProvider>

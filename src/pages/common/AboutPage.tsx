@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import PageHero from '../../components/common/PageHero'
 
 const capabilities = [
   {
@@ -45,33 +46,12 @@ function AboutPage() {
 
   return (
     <main className="min-h-screen bg-[#f7faf6] text-gray-900">
-
-      {/* ================= HERO ================= */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-green-950 via-green-900 to-emerald-800">
-        <div className="absolute rounded-full w-72 h-72 bg-lime-400/10 blur-3xl -top-24 -right-24" />
-        <div className="absolute rounded-full w-96 h-96 bg-emerald-300/10 blur-3xl -bottom-48 -left-32" />
-
-        <div className="relative px-4 py-20 mx-auto max-w-7xl sm:py-24">
-          <div className="max-w-3xl">
-            <span className="inline-flex px-4 py-2 text-xs font-bold tracking-widest uppercase border rounded-full text-lime-200 border-white/15 bg-white/10">
-              About Kisaan Mitra
-            </span>
-
-            <h1 className="mt-6 text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
-              A smarter digital bridge between
-              <span className="block text-lime-300">
-                farmers and mandis.
-              </span>
-            </h1>
-
-            <p className="max-w-2xl mt-6 text-base leading-7 text-green-100 sm:text-lg">
-              Kisaan Mitra is designed to bring mandi booking, digital tokens,
-              queue coordination and market information into one connected
-              digital experience.
-            </p>
-          </div>
-        </div>
-      </section>
+      {/* ================= HERO BANNER ================= */}
+      <PageHero
+        image="/About.png"
+        title="About Kisaan Mitra"
+        subtitle="Empowering farmers through transparent, organized and technology-driven mandi services."
+      />
 
       {/* ================= INTRO ================= */}
       <section className="px-4 py-16 bg-white">

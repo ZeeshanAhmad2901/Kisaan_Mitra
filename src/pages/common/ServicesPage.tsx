@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import PageHero from '../../components/common/PageHero'
 
 const serviceNumbers = ['01', '02', '03', '04', '05', '06']
 
@@ -84,44 +85,29 @@ function ServicesPage() {
   return (
     <main className="min-h-screen bg-[#f7faf6] text-gray-900">
 
-      {/* HERO */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-green-950 via-green-900 to-emerald-800">
-        <div className="absolute rounded-full w-72 h-72 bg-lime-300/10 blur-3xl -top-24 -right-20" />
-        <div className="absolute rounded-full w-96 h-96 bg-emerald-300/10 blur-3xl -bottom-48 -left-24" />
+      {/* HERO BANNER */}
+      <PageHero
+        image="/Services.png"
+        title="Kisaan Mitra Services"
+        subtitle={t('services.subtitle')}
+      />
 
-        <div className="relative px-4 py-20 mx-auto max-w-7xl sm:py-24">
-          <div className="max-w-3xl">
-            <span className="inline-flex px-4 py-2 text-xs font-bold tracking-widest uppercase border rounded-full text-lime-200 border-white/15 bg-white/10">
-              Kisaan Mitra Services
-            </span>
+      {/* HERO ACTIONS */}
+      <section className="px-4 py-8 bg-white border-b border-gray-100">
+        <div className="flex flex-wrap justify-center gap-3 mx-auto max-w-7xl">
+          <Link
+            to="/login"
+            className="px-6 py-3 text-sm font-bold text-green-950 transition-all bg-lime-300 rounded-xl hover:bg-lime-200 hover:-translate-y-0.5"
+          >
+            Get Started
+          </Link>
 
-            <h1 className="mt-6 text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
-              Digital services for a
-              <span className="block text-lime-300">
-                smarter mandi journey.
-              </span>
-            </h1>
-
-            <p className="max-w-2xl mt-6 text-base leading-7 text-green-100 sm:text-lg">
-              {t('services.subtitle')}
-            </p>
-
-            <div className="flex flex-wrap gap-3 mt-8">
-              <Link
-                to="/farmer/book-slot"
-                className="px-6 py-3 text-sm font-bold text-green-950 transition-all bg-lime-300 rounded-xl hover:bg-lime-200 hover:-translate-y-0.5"
-              >
-                Book a Mandi Slot
-              </Link>
-
-              <Link
-                to="/login"
-                className="px-6 py-3 text-sm font-semibold text-white transition-all border rounded-xl border-white/20 bg-white/10 hover:bg-white/20"
-              >
-                Access Dashboard
-              </Link>
-            </div>
-          </div>
+          <Link
+            to="/login"
+            className="px-6 py-3 text-sm font-semibold text-green-800 transition-all border border-green-200 rounded-xl bg-green-50 hover:bg-green-100"
+          >
+            Access Dashboard
+          </Link>
         </div>
       </section>
 
@@ -299,6 +285,7 @@ function ServicesPage() {
                   <p className="text-xs font-bold tracking-wide text-green-700 uppercase">
                     Farmer Journey
                   </p>
+
                   <h3 className="mt-1 text-xl font-black">
                     Simple digital flow
                   </h3>
@@ -387,6 +374,7 @@ function ServicesPage() {
                 <span className="flex items-center justify-center w-8 h-8 text-xs font-bold text-orange-800 bg-orange-100 rounded-full">
                   ✓
                 </span>
+
                 <span className="text-sm font-semibold text-gray-800">
                   Monitor today's arrivals
                 </span>
@@ -396,6 +384,7 @@ function ServicesPage() {
                 <span className="flex items-center justify-center w-8 h-8 text-xs font-bold text-orange-800 bg-orange-100 rounded-full">
                   ✓
                 </span>
+
                 <span className="text-sm font-semibold text-gray-800">
                   Manage queue movement
                 </span>
@@ -405,6 +394,7 @@ function ServicesPage() {
                 <span className="flex items-center justify-center w-8 h-8 text-xs font-bold text-orange-800 bg-orange-100 rounded-full">
                   ✓
                 </span>
+
                 <span className="text-sm font-semibold text-gray-800">
                   Track processing status
                 </span>
@@ -438,10 +428,10 @@ function ServicesPage() {
 
           <div className="flex flex-wrap justify-center gap-3 mt-7">
             <Link
-              to="/farmer/book-slot"
+              to="/login"
               className="px-6 py-3 text-sm font-bold text-green-950 bg-lime-300 rounded-xl hover:bg-lime-200"
             >
-              Start Booking
+              Get Started
             </Link>
 
             <Link

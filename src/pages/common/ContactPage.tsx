@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import PageHero from '../../components/common/PageHero'
 
 function ContactPage() {
   const { t } = useTranslation()
@@ -15,29 +16,29 @@ function ContactPage() {
   return (
     <main className="min-h-screen bg-[#f7faf6] text-gray-900">
 
-      {/* HERO */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-green-950 via-green-900 to-emerald-800">
-        <div className="absolute rounded-full w-72 h-72 bg-lime-300/10 blur-3xl -top-24 -right-20" />
-        <div className="absolute rounded-full w-96 h-96 bg-emerald-300/10 blur-3xl -bottom-48 -left-24" />
+      {/* ================= HERO BANNER ================= */}
+      <PageHero
+        image="/Contact.png"
+        title="Contact Kisaan Mitra"
+        subtitle="Have a question, suggestion or issue? Connect with the Kisaan Mitra team and get the support you need."
+      />
 
-        <div className="relative px-4 py-20 mx-auto max-w-7xl sm:py-24">
-          <div className="max-w-3xl">
-            <span className="inline-flex px-4 py-2 text-xs font-bold tracking-widest uppercase border rounded-full text-lime-200 border-white/15 bg-white/10">
-              Contact Kisaan Mitra
-            </span>
+      {/* HERO ACTIONS */}
+      <section className="px-4 py-8 bg-white border-b border-gray-100">
+        <div className="flex flex-wrap justify-center gap-3 mx-auto max-w-7xl">
+          <Link
+            to="/login"
+            className="px-6 py-3 text-sm font-bold text-green-950 transition-all bg-lime-300 rounded-xl hover:bg-lime-200 hover:-translate-y-0.5"
+          >
+            Get Started
+          </Link>
 
-            <h1 className="mt-6 text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
-              Let's build a smarter
-              <span className="block text-lime-300">
-                mandi experience together.
-              </span>
-            </h1>
-
-            <p className="max-w-2xl mt-6 text-base leading-7 text-green-100 sm:text-lg">
-              Have a question, suggestion or issue? Send us a message and
-              we'll help you navigate the Kisaan Mitra platform.
-            </p>
-          </div>
+          <Link
+            to="/services"
+            className="px-6 py-3 text-sm font-semibold text-green-800 transition-all border border-green-200 rounded-xl bg-green-50 hover:bg-green-100"
+          >
+            Explore Services
+          </Link>
         </div>
       </section>
 

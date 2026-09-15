@@ -1,3 +1,4 @@
+import { QRCodeSVG } from 'qrcode.react'
 import { Link } from 'react-router'
 
 function BookingSuccessPage() {
@@ -34,6 +35,14 @@ function BookingSuccessPage() {
             </div>
           </div>
         </div>
+
+        <div className="flex justify-center mt-6">
+  <QRCodeSVG
+    value="KM-2025-00847"
+    size={180}
+    level="H"
+  />
+</div>
 
         <div className="flex justify-center gap-3 mt-6">
           <Link

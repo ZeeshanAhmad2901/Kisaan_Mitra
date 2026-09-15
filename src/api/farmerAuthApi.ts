@@ -71,18 +71,41 @@ export async function farmerRegister(
   name: string,
   email: string,
   phone: string,
-  _password: string
+  password: string
 ): Promise<RegisterResponse> {
-  await delay(1000)
+  const response = await fetch(
+    `${import.meta.env.VITE_API_BASE_URL}/users/`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name,
+        email,
+        phone,
+        password,
+        role: 'farmer',
+      }),
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw error
+  }
+
+  const userData = await response.json()
 
   return {
-    token: 'mock-jwt-token-farmer-new-67890',
+    token: '',
     user: {
-      ...MOCK_FARMER,
-      id: '2',
-      name,
-      email,
-      phone,
+      id: String(userData.id),
+      name: userData.name,
+      email: userData.email ?? '',
+      phone: userData.phone,
+      role: userData.role as User['role'],
+      createdAt: new Date().toISOString(),
     },
     message: 'Registration successful',
   }

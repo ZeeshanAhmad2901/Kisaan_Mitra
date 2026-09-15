@@ -20,7 +20,7 @@ function RegisterPage() {
     if (!name.trim()) errors.name = 'Name is required'
     if (!email.trim()) errors.email = 'Email is required'
     if (!phone.trim()) errors.phone = 'Phone is required'
-    if (password.length < 6) errors.password = 'Password must be at least 6 characters'
+    if (password.length < 8) errors.password = 'Password must be at least 6 characters'
     setFieldErrors(errors)
     return Object.keys(errors).length === 0
   }

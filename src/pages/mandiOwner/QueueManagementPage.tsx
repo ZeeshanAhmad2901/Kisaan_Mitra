@@ -78,7 +78,9 @@ function QueueManagementPage() {
                       <span>📦 {item.quantity}</span>
                       <span>🚛 {item.vehicle}</span>
                       <span>🕐 Arrived: {item.arrivalTime}</span>
-                      {item.status === 'waiting' && <span>⏱️ Est. wait: {item.estimatedWait}</span>}
+                      {item.status === 'waiting' && (
+  <span>⏱️ Est. wait: {item.estimatedWait}</span>
+)}
                     </div>
                   </div>
 

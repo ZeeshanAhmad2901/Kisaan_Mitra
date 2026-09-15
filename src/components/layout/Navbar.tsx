@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { useAuth } from '../../store/authStore'
 
 function Navbar() {
   const { t, i18n } = useTranslation()
+  const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const changeLanguage = (lng: string) => {
@@ -45,9 +47,21 @@ function Navbar() {
             <option value="hi">{t('navbar.hindi')}</option>
           </select>
 
-          <Link to="/login" className="hidden sm:inline-block bg-green-700 hover:bg-green-800 text-white text-sm font-medium px-4 py-1.5 rounded transition-colors">
-            {t('navbar.login')}
-          </Link>
+          {user ? (
+  <button
+    onClick={logout}
+    className="hidden sm:inline-block bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-1.5 rounded transition-colors"
+  >
+    Logout
+  </button>
+) : (
+  <Link
+    to="/login"
+    className="hidden sm:inline-block bg-green-700 hover:bg-green-800 text-white text-sm font-medium px-4 py-1.5 rounded transition-colors"
+  >
+    {t('navbar.login')}
+  </Link>
+)}
 
           {/* Mobile Hamburger */}
           <button

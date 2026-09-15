@@ -19,17 +19,41 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    user: null,
-    token: null,
-    isLoading: false,
-    error: null,
+  const [state, setState] = useState<AuthState>(() => {
+    const storedUser = localStorage.getItem('kisaan_mitra_user')
+    const storedToken = localStorage.getItem('kisaan_mitra_token')
+
+    return {
+      user: storedUser ? JSON.parse(storedUser) : null,
+      token: storedToken,
+      isLoading: false,
+      error: null,
+    }
   })
 
   const login = async (data: LoginRequest) => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }))
+    setState((prev) => ({
+      ...prev,
+      isLoading: true,
+      error: null,
+    }))
+
     try {
-      const response = await farmerLogin(data.emailOrPhone, data.password)
+      const response = await farmerLogin(
+        data.emailOrPhone,
+        data.password
+      )
+
+      localStorage.setItem(
+        'kisaan_mitra_user',
+        JSON.stringify(response.user)
+      )
+
+      localStorage.setItem(
+        'kisaan_mitra_token',
+        response.token
+      )
+
       setState({
         user: response.user,
         token: response.token,
@@ -46,9 +70,30 @@ function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const register = async (data: RegisterRequest) => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }))
+    setState((prev) => ({
+      ...prev,
+      isLoading: true,
+      error: null,
+    }))
+
     try {
-      const response = await farmerRegister(data.name, data.email, data.phone, data.password)
+      const response = await farmerRegister(
+        data.name,
+        data.email,
+        data.phone,
+        data.password
+      )
+
+      localStorage.setItem(
+        'kisaan_mitra_user',
+        JSON.stringify(response.user)
+      )
+
+      localStorage.setItem(
+        'kisaan_mitra_token',
+        response.token
+      )
+
       setState({
         user: response.user,
         token: response.token,
@@ -65,15 +110,34 @@ function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    setState({ user: null, token: null, isLoading: false, error: null })
+    localStorage.removeItem('kisaan_mitra_user')
+    localStorage.removeItem('kisaan_mitra_token')
+
+    setState({
+      user: null,
+      token: null,
+      isLoading: false,
+      error: null,
+    })
   }
 
   const clearError = () => {
-    setState((prev) => ({ ...prev, error: null }))
+    setState((prev) => ({
+      ...prev,
+      error: null,
+    }))
   }
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout, clearError }}>
+    <AuthContext.Provider
+      value={{
+        ...state,
+        login,
+        register,
+        logout,
+        clearError,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   )
@@ -81,9 +145,11 @@ function AuthProvider({ children }: { children: ReactNode }) {
 
 function useAuth() {
   const context = useContext(AuthContext)
+
   if (!context) {
     throw new Error('useAuth must be used within an AuthProvider')
   }
+
   return context
 }
 

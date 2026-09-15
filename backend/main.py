@@ -27,12 +27,12 @@ app.add_exception_handler(
     unexpected_exception_handler,
 )
 app.include_router(transport_request_router)
+app.include_router(current_user_router)
 app.include_router(user_router)
 app.include_router(mandi_router)
 app.include_router(vehicle_router)
 app.include_router(login_router)
 app.include_router(protected_router)
-app.include_router(current_user_router)
 
 
 @app.get("/")

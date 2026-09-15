@@ -93,74 +93,72 @@ function HomePage() {
       {/* =========================================================
           HERO
       ========================================================= */}
-      <section className="relative min-h-[620px] overflow-hidden bg-gradient-to-br from-green-950 via-green-900 to-emerald-800">
+      <section className="relative overflow-hidden bg-green-950">
+  {/* Full responsive banner */}
+  <div className="relative w-full">
+    <img
+      src="/kisaan-mitra-farmer-green.jpeg"
+      alt="Kisaan Mitra farmer banner"
+      className="block w-full h-auto"
+    />
 
-        {/* Farmer Background Image */}
-        <div className="absolute inset-0">
-          <img
-            src="/kisaan-mitra-farmer-green.png"
-            alt="Indian farmer standing in a wheat field"
-            className="absolute inset-0 object-cover object-right w-full h-full"
-          />
+    {/* Dark green overlay */}
+    <div className="absolute inset-0 bg-gradient-to-r from-green-950/95 via-green-950/65 to-green-950/10" />
 
-          {/* Green overlay - keeps left side darker for text */}
-          <div className="absolute inset-0 bg-gradient-to-r from-green-950 via-green-950/90 to-green-950/25" />
+    {/* Decorative glow */}
+    <div className="absolute inset-0 pointer-events-none">
+      <div className="absolute w-64 h-64 rounded-full bg-lime-400/10 -top-24 -right-20 blur-3xl" />
+      <div className="absolute rounded-full w-72 h-72 bg-emerald-300/10 -bottom-40 left-10 blur-3xl" />
+    </div>
 
-          {/* Overall green tint */}
-          <div className="absolute inset-0 bg-green-900/10" />
-        </div>
+    {/* Hero content */}
+    <div className="absolute inset-0 flex items-center">
+      <div className="w-full px-4 py-10 mx-auto max-w-7xl sm:px-6 lg:px-8">
+        <div className="max-w-3xl">
 
-        {/* Decorative Green Glow */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute w-64 h-64 rounded-full bg-lime-400/10 -top-24 -right-20 blur-3xl" />
-          <div className="absolute rounded-full w-72 h-72 bg-emerald-300/10 -bottom-40 left-10 blur-3xl" />
-        </div>
-
-        {/* Hero Content */}
-        <div className="relative z-10 flex min-h-[620px] items-center px-4 py-16 mx-auto max-w-7xl sm:py-20 lg:py-24">
-          <div className="max-w-3xl">
-
-            <div className="inline-flex items-center px-3 py-1.5 text-xs font-semibold tracking-wide text-lime-200 uppercase border rounded-full border-white/15 bg-white/5 backdrop-blur-sm">
-              {t('home.platform')}
-            </div>
-
-            <h1 className="mt-6 text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
-              {t('home.heroTitle')}
-
-              <span className="block text-lime-300">
-                {t('home.heroHighlight')}
-              </span>
-            </h1>
-
-            <p className="max-w-2xl mt-6 text-base leading-7 text-green-100 sm:text-lg">
-              {t('home.heroDescription')}
-            </p>
-
-            <div className="flex flex-wrap gap-3 mt-8">
-              <Link
-                to="/farmer/book-slot"
-                className="px-6 py-3 text-sm font-bold text-green-950 transition-all bg-lime-300 rounded-xl hover:bg-lime-200 hover:-translate-y-0.5 shadow-lg shadow-green-950/20"
-              >
-                {t('home.bookSlot')}
-              </Link>
-
-              <a
-                href="#mandi-snapshot"
-                className="px-6 py-3 text-sm font-semibold text-white transition-all border rounded-xl border-white/20 bg-white/10 hover:bg-white/15 backdrop-blur-sm"
-              >
-                {t('home.exploreMandis')}
-              </a>
-            </div>
-
-            <div className="flex flex-wrap gap-6 mt-8 text-sm text-green-100">
-              <span>✓ {t('home.digitalBooking')}</span>
-              <span>✓ {t('home.qrToken')}</span>
-              <span>✓ {t('home.organizedQueue')}</span>
-            </div>
-
+          <div className="inline-flex items-center px-3 py-1.5 text-xs font-semibold tracking-wide text-lime-200 uppercase border rounded-full border-white/15 bg-white/5 backdrop-blur-sm">
+            {t('home.platform')}
           </div>
+
+          <h1 className="mt-6 text-4xl font-black leading-tight text-white sm:text-5xl lg:text-6xl">
+            {t('home.heroTitle')}
+
+            <span className="block text-lime-300">
+              {t('home.heroHighlight')}
+            </span>
+          </h1>
+
+          <p className="max-w-2xl mt-6 text-base leading-7 text-green-100 sm:text-lg">
+            {t('home.heroDescription')}
+          </p>
+
+          <div className="flex flex-wrap gap-3 mt-8">
+            <Link
+              to="/login"
+              className="px-6 py-3 text-sm font-bold text-green-950 transition-all bg-lime-300 rounded-xl hover:bg-lime-200 hover:-translate-y-0.5 shadow-lg shadow-green-950/20"
+            >
+              Get Started
+            </Link>
+
+            <a
+              href="#mandi-snapshot"
+              className="px-6 py-3 text-sm font-semibold text-white transition-all border rounded-xl border-white/20 bg-white/10 hover:bg-white/15 backdrop-blur-sm"
+            >
+              {t('home.exploreMandis')}
+            </a>
+          </div>
+
+          <div className="flex flex-wrap gap-6 mt-8 text-sm text-green-100">
+            <span>✓ {t('home.digitalBooking')}</span>
+            <span>✓ {t('home.qrToken')}</span>
+            <span>✓ {t('home.organizedQueue')}</span>
+          </div>
+
         </div>
-      </section>
+      </div>
+    </div>
+  </div>
+</section>
 
       {/* =========================================================
           IMPACT STATS
@@ -479,6 +477,7 @@ function HomePage() {
 
               </div>
 
+              {/* ROLE-SPECIFIC FARMER CTA */}
               <Link
                 to="/farmer/book-slot"
                 className="inline-block px-5 py-3 mt-6 text-sm font-bold text-white bg-green-700 rounded-xl hover:bg-green-800"
@@ -560,14 +559,15 @@ function HomePage() {
           </h2>
 
           <p className="max-w-2xl mx-auto mt-4 text-green-100">
-            {t('home.ctaDescription')}
+            Access Kisaan Mitra services for farmers and mandi operators.
           </p>
 
+          {/* PUBLIC CTA */}
           <Link
-            to="/farmer/book-slot"
+            to="/login"
             className="inline-block px-7 py-3 mt-7 text-sm font-bold text-green-950 transition-all bg-lime-300 rounded-xl hover:bg-lime-200 hover:-translate-y-0.5"
           >
-            {t('home.startBooking')}
+            Get Started
           </Link>
 
         </div>

@@ -5,6 +5,8 @@ from database.connection import engine
 from models.base import Base
 from models.login_attempt import LoginAttempt  # noqa: F401
 from models.mandi import Mandi  # noqa: F401
+from models.slot import Slot  # noqa: F401
+from models.booking import Booking  # noqa: F401
 from models.transport_request import TransportRequest  # noqa: F401
 # Import every model so Base.metadata contains all tables.
 from models.user import User  # noqa: F401

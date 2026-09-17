@@ -39,14 +39,13 @@ def register_user(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         ) from exc
-
 @router.get("/", response_model=UserListResponse)
 def list_users(
     page: int = 1,
     page_size: int = 10,
     search: str | None = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role("admin")),
+    current_user: dict = Depends(require_role("admin", "superAdmin")),
 ):
     if page < 1:
         raise HTTPException(
@@ -81,7 +80,7 @@ def list_users(
 def get_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role("admin")),
+    current_user: dict = Depends(require_role("admin", "superAdmin")),
 ):
     user = get_user_by_id(db, user_id)
 
@@ -99,7 +98,7 @@ def edit_user(
     user_id: int,
     user_data: UserUpdate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role("admin")),
+    current_user: dict = Depends(require_role("admin", "superAdmin")),
 ):
     user = update_user(db, user_id, user_data)
 
@@ -116,7 +115,7 @@ def edit_user(
 def delete_user(
     user_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role("admin")),
+    current_user: dict = Depends(require_role("admin", "superAdmin")),
 ):
     user = deactivate_user(db, user_id)
 

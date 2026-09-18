@@ -1,49 +1,22 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import type { MandiBooking } from '../../api/bookingApi'
+import { getMyBookings } from '../../api/bookingApi'
 import { getCropPrices } from '../../api/mandiApi'
+import type { BackendVehicle } from '../../api/vehicleApi'
+import { getMyVehicles } from '../../api/vehicleApi'
 import type { CropPrice } from '../../types'
 import { formatIndianCurrency } from '../../utils/formatters'
-
-const bookingActivity = [
-  { label: 'Mon', value: 2 },
-  { label: 'Tue', value: 4 },
-  { label: 'Wed', value: 3 },
-  { label: 'Thu', value: 6 },
-  { label: 'Fri', value: 5 },
-  { label: 'Sat', value: 7 },
-  { label: 'Sun', value: 4 },
-]
-
-const recentBookings = [
-  {
-    id: 'KM-2026-00421',
-    mandi: 'Azadpur Mandi',
-    crop: 'Wheat',
-    date: '18 Sep 2026',
-    time: '07:30 AM',
-    status: 'Confirmed',
-  },
-  {
-    id: 'KM-2026-00408',
-    mandi: 'Azadpur Mandi',
-    crop: 'Rice',
-    date: '14 Sep 2026',
-    time: '08:15 AM',
-    status: 'Completed',
-  },
-  {
-    id: 'KM-2026-00391',
-    mandi: 'Jawaharlal Nehru Mandi',
-    crop: 'Mustard',
-    date: '08 Sep 2026',
-    time: '09:00 AM',
-    status: 'Completed',
-  },
-]
 
 function FarmerDashboardPage() {
   const [prices, setPrices] = useState<CropPrice[]>([])
   const [loadingPrices, setLoadingPrices] = useState(true)
+
+  const [vehicles, setVehicles] = useState<BackendVehicle[]>([])
+  const [loadingVehicles, setLoadingVehicles] = useState(true)
+
+  const [bookings, setBookings] = useState<MandiBooking[]>([])
+  const [loadingBookings, setLoadingBookings] = useState(true)
 
   const [farmerName, setFarmerName] = useState('Farmer')
 
@@ -59,10 +32,34 @@ function FarmerDashboardPage() {
       }
     }
 
+    async function loadBookings() {
+      try {
+        const data = await getMyBookings()
+        setBookings(data)
+      } catch {
+        setBookings([])
+      } finally {
+        setLoadingBookings(false)
+      }
+    }
+
+    async function loadVehicles() {
+      try {
+        const data = await getMyVehicles()
+        setVehicles(data)
+      } catch {
+        setVehicles([])
+      } finally {
+        setLoadingVehicles(false)
+      }
+    }
+
     loadPrices()
+    loadBookings()
+    loadVehicles()
 
     try {
-      const storedUser = localStorage.getItem('user')
+      const storedUser = localStorage.getItem('kisaan_mitra_user')
 
       if (storedUser) {
         const parsedUser = JSON.parse(storedUser)
@@ -75,6 +72,62 @@ function FarmerDashboardPage() {
       // Keep fallback name
     }
   }, [])
+
+  const upcomingBooking = useMemo(() => {
+    return (
+      bookings
+        .filter((booking) => booking.status !== 'completed')
+        .sort(
+          (a, b) =>
+            new Date(
+              `${a.slot_date}T${a.start_time}`,
+            ).getTime() -
+            new Date(
+              `${b.slot_date}T${b.start_time}`,
+            ).getTime(),
+        )[0] ?? null
+    )
+  }, [bookings])
+
+  const bookingActivity = useMemo(() => {
+    const today = new Date()
+    const startOfWeek = new Date(today)
+
+    const day = today.getDay()
+    const mondayOffset = day === 0 ? -6 : 1 - day
+
+    startOfWeek.setDate(today.getDate() + mondayOffset)
+    startOfWeek.setHours(0, 0, 0, 0)
+
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(startOfWeek)
+      date.setDate(startOfWeek.getDate() + index)
+
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const dayOfMonth = String(date.getDate()).padStart(2, '0')
+
+      const dateKey = `${year}-${month}-${dayOfMonth}`
+
+      const value = bookings.filter(
+        (booking) => booking.slot_date === dateKey,
+      ).length
+
+      return {
+        label: date.toLocaleDateString('en-IN', {
+          weekday: 'short',
+        }),
+        value,
+      }
+    })
+  }, [bookings])
+
+  const maxBookingActivity = useMemo(() => {
+    return Math.max(
+      1,
+      ...bookingActivity.map((item) => item.value),
+    )
+  }, [bookingActivity])
 
   const highestPrice = useMemo(() => {
     if (!prices.length) return null
@@ -96,7 +149,9 @@ function FarmerDashboardPage() {
   const maxCropPrice = useMemo(() => {
     if (!chartPrices.length) return 1
 
-    return Math.max(...chartPrices.map((item) => item.value))
+    return Math.max(
+      ...chartPrices.map((item) => item.value),
+    )
   }, [chartPrices])
 
   return (
@@ -243,37 +298,58 @@ function FarmerDashboardPage() {
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
+          {/* UPCOMING VISIT */}
           <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
             <div className="flex items-start justify-between">
+
               <div>
                 <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
                   Upcoming Visit
                 </p>
 
                 <p className="mt-3 text-2xl font-black text-green-800">
-                  18 Sep
+                  {loadingBookings
+                    ? '...'
+                    : upcomingBooking
+                      ? new Date(
+                          upcomingBooking.slot_date,
+                        ).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                        })
+                      : 'N/A'}
                 </p>
 
                 <p className="mt-1 text-xs text-gray-500">
-                  Azadpur Mandi · 07:30 AM
+                  {upcomingBooking
+                    ? `${upcomingBooking.mandi_name} · ${upcomingBooking.start_time.slice(0, 5)}`
+                    : 'No upcoming visit'}
                 </p>
               </div>
 
               <div className="px-3 py-2 text-xl bg-green-100 rounded-xl">
                 📅
               </div>
+
             </div>
           </div>
 
+          {/* COMPLETED VISITS */}
           <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
             <div className="flex items-start justify-between">
+
               <div>
                 <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
                   Completed Visits
                 </p>
 
                 <p className="mt-3 text-2xl font-black text-blue-800">
-                  12
+                  {loadingBookings
+                    ? '...'
+                    : bookings.filter(
+                        (booking) =>
+                          booking.status === 'completed',
+                      ).length}
                 </p>
 
                 <p className="mt-1 text-xs text-gray-500">
@@ -284,33 +360,96 @@ function FarmerDashboardPage() {
               <div className="px-3 py-2 text-xl bg-blue-100 rounded-xl">
                 ✓
               </div>
+
             </div>
           </div>
 
-          <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
-                  Registered Vehicle
-                </p>
+          {/* REGISTERED VEHICLES */}
+<div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
+  <div className="flex items-start justify-between gap-4">
+    <div>
+      <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
+        Registered Vehicles
+      </p>
 
-                <p className="mt-3 text-2xl font-black text-orange-700">
-                  01
-                </p>
+      <p className="mt-2 text-2xl font-black text-orange-700">
+        {loadingVehicles
+          ? '...'
+          : vehicles.filter((vehicle) => vehicle.is_active).length
+              .toString()
+              .padStart(2, '0')}
+      </p>
 
-                <p className="mt-1 text-xs text-gray-500">
-                  Vehicle ready for booking
-                </p>
-              </div>
+      <p className="mt-1 text-xs text-gray-500">
+        Active vehicles ready for booking
+      </p>
+    </div>
 
-              <div className="px-3 py-2 text-xl bg-orange-100 rounded-xl">
-                🚜
-              </div>
+    <div className="px-3 py-2 text-xl bg-orange-100 rounded-xl">
+      🚜
+    </div>
+  </div>
+
+  {loadingVehicles ? (
+    <div className="p-4 mt-5 text-sm text-gray-500 bg-gray-50 rounded-xl">
+      Loading vehicle details...
+    </div>
+  ) : vehicles.filter((vehicle) => vehicle.is_active).length === 0 ? (
+    <div className="p-4 mt-5 border border-orange-100 bg-orange-50 rounded-xl">
+      <p className="text-sm font-semibold text-gray-800">
+        No active vehicle registered
+      </p>
+
+      <p className="mt-1 text-xs text-gray-500">
+        Register a vehicle before booking a mandi slot.
+      </p>
+
+      <Link
+        to="/farmer/vehicles"
+        className="inline-block mt-3 text-xs font-bold text-orange-700 hover:text-orange-800"
+      >
+        Manage Vehicles →
+      </Link>
+    </div>
+  ) : (
+    <div className="mt-5 space-y-3">
+      {vehicles
+        .filter((vehicle) => vehicle.is_active)
+        .map((vehicle) => (
+          <div
+            key={vehicle.id}
+            className="flex items-center justify-between gap-3 p-4 border border-orange-100 rounded-xl bg-orange-50"
+          >
+            <div className="min-w-0">
+              <p className="text-sm font-black text-gray-900">
+                {vehicle.vehicle_number}
+              </p>
+
+              <p className="mt-1 text-xs text-gray-500">
+                {vehicle.vehicle_type} · Vehicle ID #{vehicle.id}
+              </p>
             </div>
-          </div>
 
+            <span className="px-2.5 py-1 text-[10px] font-bold text-green-700 bg-green-100 rounded-full">
+              ACTIVE
+            </span>
+          </div>
+        ))}
+
+      <Link
+        to="/farmer/vehicles"
+        className="block text-xs font-bold text-center text-orange-700 hover:text-orange-800"
+      >
+        Manage Vehicles →
+      </Link>
+    </div>
+  )}
+</div>
+
+          {/* CURRENT CROP PRICE */}
           <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
             <div className="flex items-start justify-between">
+
               <div>
                 <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
                   Current Crop Price
@@ -320,18 +459,21 @@ function FarmerDashboardPage() {
                   {loadingPrices
                     ? '...'
                     : highestPrice
-                      ? formatIndianCurrency(highestPrice.modalPrice)
-                      : '₹2,325'}
+                      ? formatIndianCurrency(
+                          highestPrice.modalPrice,
+                        )
+                      : 'N/A'}
                 </p>
 
                 <p className="mt-1 text-xs text-gray-500">
-                  {highestPrice?.cropName ?? 'Wheat'} · modal price
+                  {highestPrice?.cropName ?? 'No data'} · modal price
                 </p>
               </div>
 
               <div className="px-3 py-2 text-xl bg-green-100 rounded-xl">
                 ₹
               </div>
+
             </div>
           </div>
 
@@ -350,6 +492,7 @@ function FarmerDashboardPage() {
           <div className="p-6 bg-white border border-gray-200 shadow-sm rounded-2xl lg:col-span-3">
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+
               <div>
                 <p className="text-xs font-bold tracking-widest text-green-700 uppercase">
                   Activity Overview
@@ -367,12 +510,19 @@ function FarmerDashboardPage() {
               <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700">
                 This Week
               </span>
+
             </div>
 
             <div className="flex items-end h-64 gap-3 px-2 mt-8 border-b border-gray-200">
 
               {bookingActivity.map((item) => {
-                const height = `${(item.value / 7) * 100}%`
+                const height =
+                  item.value === 0
+                    ? '0%'
+                    : `${Math.max(
+                        8,
+                        (item.value / maxBookingActivity) * 100,
+                      )}%`
 
                 return (
                   <div
@@ -492,12 +642,14 @@ function FarmerDashboardPage() {
                 </p>
 
                 <h2 className="mt-2 text-2xl font-black text-gray-900">
-                  Wheat · Azadpur Mandi
+                  {upcomingBooking
+                    ? `${upcomingBooking.crop_type} · ${upcomingBooking.mandi_name}`
+                    : 'No upcoming procurement'}
                 </h2>
               </div>
 
               <span className="rounded-full bg-green-700 px-3 py-1.5 text-xs font-bold text-white">
-                Confirmed
+                {upcomingBooking?.status ?? 'No booking'}
               </span>
 
             </div>
@@ -508,8 +660,19 @@ function FarmerDashboardPage() {
                 <p className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
                   Date
                 </p>
+
                 <p className="mt-1 font-black text-gray-900">
-                  18 Sep 2026
+                  {loadingBookings
+                    ? '...'
+                    : upcomingBooking
+                      ? new Date(
+                          upcomingBooking.slot_date,
+                        ).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })
+                      : 'N/A'}
                 </p>
               </div>
 
@@ -517,8 +680,11 @@ function FarmerDashboardPage() {
                 <p className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
                   Time
                 </p>
+
                 <p className="mt-1 font-black text-gray-900">
-                  07:30 AM
+                  {upcomingBooking
+                    ? `${upcomingBooking.start_time.slice(0, 5)} - ${upcomingBooking.end_time.slice(0, 5)}`
+                    : 'N/A'}
                 </p>
               </div>
 
@@ -526,8 +692,9 @@ function FarmerDashboardPage() {
                 <p className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
                   Token
                 </p>
+
                 <p className="mt-1 font-black text-gray-900">
-                  KM-AZ-2741
+                  {upcomingBooking?.booking_code ?? 'N/A'}
                 </p>
               </div>
 
@@ -557,6 +724,7 @@ function FarmerDashboardPage() {
           <div className="p-6 bg-white border border-orange-200 shadow-sm rounded-2xl">
 
             <div className="flex items-center gap-3">
+
               <div className="flex items-center justify-center w-10 h-10 bg-orange-100 rounded-xl">
                 📢
               </div>
@@ -570,6 +738,7 @@ function FarmerDashboardPage() {
                   Important Information
                 </h2>
               </div>
+
             </div>
 
             <div className="mt-5 space-y-4 text-sm leading-6 text-gray-600">
@@ -628,6 +797,7 @@ function FarmerDashboardPage() {
 
               <thead className="bg-gray-50">
                 <tr>
+
                   <th className="px-6 py-4 text-xs font-bold tracking-wider text-gray-500 uppercase">
                     Booking ID
                   </th>
@@ -651,53 +821,79 @@ function FarmerDashboardPage() {
                   <th className="px-6 py-4 text-xs font-bold tracking-wider text-gray-500 uppercase">
                     Status
                   </th>
+
                 </tr>
               </thead>
 
               <tbody className="divide-y divide-gray-100">
 
-                {recentBookings.map((booking) => (
-                  <tr
-                    key={booking.id}
-                    className="transition hover:bg-green-50/40"
-                  >
-
-                    <td className="px-6 py-4 text-sm font-bold text-gray-900">
-                      {booking.id}
+                {loadingBookings ? (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-6 py-8 text-sm text-center text-gray-500"
+                    >
+                      Loading your bookings...
                     </td>
-
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {booking.mandi}
-                    </td>
-
-                    <td className="px-6 py-4 text-sm font-semibold text-gray-800">
-                      {booking.crop}
-                    </td>
-
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {booking.date}
-                    </td>
-
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {booking.time}
-                    </td>
-
-                    <td className="px-6 py-4">
-
-                      <span
-                        className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
-                          booking.status === 'Confirmed'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-blue-100 text-blue-800'
-                        }`}
-                      >
-                        {booking.status}
-                      </span>
-
-                    </td>
-
                   </tr>
-                ))}
+                ) : bookings.length > 0 ? (
+                  bookings.slice(0, 5).map((booking) => (
+                    <tr
+                      key={booking.id}
+                      className="transition hover:bg-green-50/40"
+                    >
+
+                      <td className="px-6 py-4 text-sm font-bold text-gray-900">
+                        {booking.booking_code}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {booking.mandi_name}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-800">
+                        {booking.crop_type}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {new Date(
+                          booking.slot_date,
+                        ).toLocaleDateString('en-IN')}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-gray-600">
+                        {booking.start_time.slice(0, 5)} -{' '}
+                        {booking.end_time.slice(0, 5)}
+                      </td>
+
+                      <td className="px-6 py-4">
+
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${
+                            booking.status === 'confirmed'
+                              ? 'bg-green-100 text-green-800'
+                              : booking.status === 'completed'
+                                ? 'bg-blue-100 text-blue-800'
+                                : 'bg-orange-100 text-orange-800'
+                          }`}
+                        >
+                          {booking.status}
+                        </span>
+
+                      </td>
+
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={6}
+                      className="px-6 py-8 text-sm text-center text-gray-500"
+                    >
+                      No bookings found.
+                    </td>
+                  </tr>
+                )}
 
               </tbody>
 

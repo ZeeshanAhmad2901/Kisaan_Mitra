@@ -1,204 +1,64 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { getMandiBookings, type MandiBooking } from '../../api/bookingApi'
+import { getMandis, type BackendMandi } from '../../api/mandiApi'
+import { useAuth } from '../../store/authStore'
+import ProcurementCell from './ProcurementCell'
 
-type BookingStatus = 'confirmed' | 'completed' | 'cancelled'
-
-type Booking = {
-  id: string
-  farmerName: string
-  farmerPhone: string
-  mandiName: string
-  crop: string
-  quantity: number
-  vehicleNumber: string
-  vehicleType: 'Tractor' | 'Truck' | 'Pickup'
-  date: string
-  time: string
-  status: BookingStatus
-  revenue: number
-}
-
-const BOOKINGS: Booking[] = [
-  {
-    id: 'KM-2025-00847',
-    farmerName: 'Rajesh Kumar',
-    farmerPhone: '98XXXXXX21',
-    mandiName: 'Azadpur Mandi',
-    crop: 'Wheat',
-    quantity: 10,
-    vehicleNumber: 'UP-32-AB-1234',
-    vehicleType: 'Tractor',
-    date: '2025-09-01',
-    time: '6:00 AM - 8:00 AM',
-    status: 'confirmed',
-    revenue: 2500,
-  },
-  {
-    id: 'KM-2025-00846',
-    farmerName: 'Suresh Yadav',
-    farmerPhone: '97XXXXXX42',
-    mandiName: 'Azadpur Mandi',
-    crop: 'Rice',
-    quantity: 25,
-    vehicleNumber: 'DL-01-CD-4521',
-    vehicleType: 'Truck',
-    date: '2025-09-01',
-    time: '8:00 AM - 10:00 AM',
-    status: 'completed',
-    revenue: 6200,
-  },
-  {
-    id: 'KM-2025-00845',
-    farmerName: 'Amit Singh',
-    farmerPhone: '96XXXXXX87',
-    mandiName: 'Azadpur Mandi',
-    crop: 'Maize',
-    quantity: 15,
-    vehicleNumber: 'UP-14-EF-7788',
-    vehicleType: 'Pickup',
-    date: '2025-09-02',
-    time: '10:00 AM - 12:00 PM',
-    status: 'completed',
-    revenue: 3800,
-  },
-  {
-    id: 'KM-2025-00844',
-    farmerName: 'Vijay Sharma',
-    farmerPhone: '95XXXXXX16',
-    mandiName: 'Azadpur Mandi',
-    crop: 'Wheat',
-    quantity: 20,
-    vehicleNumber: 'HR-26-GH-1190',
-    vehicleType: 'Truck',
-    date: '2025-09-02',
-    time: '12:00 PM - 2:00 PM',
-    status: 'confirmed',
-    revenue: 5000,
-  },
-  {
-    id: 'KM-2025-00843',
-    farmerName: 'Mohan Lal',
-    farmerPhone: '94XXXXXX55',
-    mandiName: 'Azadpur Mandi',
-    crop: 'Rice',
-    quantity: 18,
-    vehicleNumber: 'UP-16-JK-3344',
-    vehicleType: 'Truck',
-    date: '2025-09-03',
-    time: '6:00 AM - 8:00 AM',
-    status: 'completed',
-    revenue: 4500,
-  },
-  {
-    id: 'KM-2025-00842',
-    farmerName: 'Ramesh Patel',
-    farmerPhone: '93XXXXXX19',
-    mandiName: 'Azadpur Mandi',
-    crop: 'Wheat',
-    quantity: 12,
-    vehicleNumber: 'UP-32-LM-9087',
-    vehicleType: 'Tractor',
-    date: '2025-09-03',
-    time: '8:00 AM - 10:00 AM',
-    status: 'cancelled',
-    revenue: 0,
-  },
-  {
-    id: 'KM-2025-00841',
-    farmerName: 'Anil Verma',
-    farmerPhone: '92XXXXXX73',
-    mandiName: 'Azadpur Mandi',
-    crop: 'Vegetables',
-    quantity: 8,
-    vehicleNumber: 'DL-03-NP-2468',
-    vehicleType: 'Pickup',
-    date: '2025-09-04',
-    time: '10:00 AM - 12:00 PM',
-    status: 'confirmed',
-    revenue: 2100,
-  },
-  {
-    id: 'KM-2025-00840',
-    farmerName: 'Deepak Gupta',
-    farmerPhone: '91XXXXXX64',
-    mandiName: 'Azadpur Mandi',
-    crop: 'Maize',
-    quantity: 22,
-    vehicleNumber: 'UP-14-QR-5522',
-    vehicleType: 'Truck',
-    date: '2025-09-04',
-    time: '2:00 PM - 4:00 PM',
-    status: 'completed',
-    revenue: 5400,
-  },
-]
-
-const DAILY_BOOKINGS = [
-  { day: 'Mon', bookings: 18 },
-  { day: 'Tue', bookings: 24 },
-  { day: 'Wed', bookings: 20 },
-  { day: 'Thu', bookings: 29 },
-  { day: 'Fri', bookings: 26 },
-  { day: 'Sat', bookings: 32 },
-  { day: 'Sun', bookings: 21 },
-]
-
-const DAILY_QUANTITY = [
-  { day: 'Mon', quantity: 120 },
-  { day: 'Tue', quantity: 165 },
-  { day: 'Wed', quantity: 142 },
-  { day: 'Thu', quantity: 190 },
-  { day: 'Fri', quantity: 176 },
-  { day: 'Sat', quantity: 218 },
-  { day: 'Sun', quantity: 154 },
-]
-
-const CROP_BOOKINGS = [
-  { crop: 'Wheat', value: 42 },
-  { crop: 'Rice', value: 31 },
-  { crop: 'Maize', value: 18 },
-  { crop: 'Vegetables', value: 9 },
-]
-
-const VEHICLE_BOOKINGS = [
-  { type: 'Truck', value: 45 },
-  { type: 'Tractor', value: 35 },
-  { type: 'Pickup', value: 20 },
-]
-
-const formatIndianCurrency = (amount: number) =>
-  `₹${amount.toLocaleString('en-IN')}`
+type BookingStatus =
+  | 'confirmed'
+  | 'in_progress'
+  | 'completed'
 
 const formatDate = (date: string) =>
-  new Date(date).toLocaleDateString('en-IN', {
+  new Date(`${date}T00:00:00`).toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   })
 
-const getStatusStyles = (status: BookingStatus) => {
+const formatTime = (time: string) => {
+  const [hours, minutes] = time.split(':').map(Number)
+
+  const date = new Date()
+  date.setHours(hours, minutes, 0, 0)
+
+  return date.toLocaleTimeString('en-IN', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+const getStatusStyles = (status: string) => {
   switch (status) {
     case 'confirmed':
       return 'bg-blue-50 text-blue-700 border-blue-200'
+
+    case 'in_progress':
+      return 'bg-orange-50 text-orange-700 border-orange-200'
+
     case 'completed':
       return 'bg-green-50 text-green-700 border-green-200'
-    case 'cancelled':
-      return 'bg-red-50 text-red-700 border-red-200'
+
+    default:
+      return 'bg-gray-50 text-gray-700 border-gray-200'
   }
 }
 
 const getCropIcon = (crop: string) => {
-  switch (crop) {
-    case 'Wheat':
-      return '🌾'
-    case 'Rice':
-      return '🌾'
-    case 'Maize':
-      return '🌽'
-    case 'Vegetables':
-      return '🥬'
-    default:
-      return '🌱'
+  const normalizedCrop = crop.toLowerCase()
+
+  if (normalizedCrop.includes('wheat')) return '🌾'
+  if (normalizedCrop.includes('rice')) return '🌾'
+  if (normalizedCrop.includes('maize')) return '🌽'
+  if (
+    normalizedCrop.includes('vegetable') ||
+    normalizedCrop.includes('potato') ||
+    normalizedCrop.includes('tomato')
+  ) {
+    return '🥬'
   }
+
+  return '🌱'
 }
 
 function SectionTitle({
@@ -211,6 +71,7 @@ function SectionTitle({
   return (
     <div className="mb-5">
       <h2 className="text-lg font-bold text-gray-900">{title}</h2>
+
       {description && (
         <p className="mt-1 text-sm text-gray-500">{description}</p>
       )}
@@ -218,258 +79,218 @@ function SectionTitle({
   )
 }
 
-function LineChart({
-  data,
-  valueKey,
-}: {
-  data: { day: string; [key: string]: string | number }[]
-  valueKey: string
-}) {
-  const width = 700
-  const height = 250
-  const paddingX = 45
-  const paddingY = 25
-
-  const values = data.map((item) => Number(item[valueKey]))
-  const maxValue = Math.max(...values, 1)
-
-  const points = data.map((item, index) => {
-    const x =
-      paddingX +
-      (index / Math.max(data.length - 1, 1)) *
-        (width - paddingX * 2)
-
-    const y =
-      height -
-      paddingY -
-      (Number(item[valueKey]) / maxValue) *
-        (height - paddingY * 2)
-
-    return { x, y }
-  })
-
-  const path = points
-    .map((point, index) =>
-      index === 0
-        ? `M ${point.x} ${point.y}`
-        : `L ${point.x} ${point.y}`,
-    )
-    .join(' ')
-
-  return (
-    <div className="overflow-x-auto">
-      <svg
-        viewBox={`0 0 ${width} ${height}`}
-        className="w-full min-w-[620px] h-64"
-      >
-        {[0, 1, 2, 3, 4].map((step) => {
-          const y =
-            paddingY +
-            (step / 4) * (height - paddingY * 2)
-
-          return (
-            <line
-              key={step}
-              x1={paddingX}
-              x2={width - paddingX}
-              y1={y}
-              y2={y}
-              stroke="#e5e7eb"
-              strokeWidth="1"
-            />
-          )
-        })}
-
-        <path
-          d={path}
-          fill="none"
-          stroke="#15803d"
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {points.map((point, index) => (
-          <g key={data[index].day}>
-            <circle
-              cx={point.x}
-              cy={point.y}
-              r="5"
-              fill="#15803d"
-            />
-            <text
-              x={point.x}
-              y={height - 5}
-              textAnchor="middle"
-              fontSize="12"
-              fill="#6b7280"
-            >
-              {data[index].day}
-            </text>
-            <text
-              x={point.x}
-              y={point.y - 12}
-              textAnchor="middle"
-              fontSize="11"
-              fontWeight="700"
-              fill="#374151"
-            >
-              {data[index][valueKey]}
-            </text>
-          </g>
-        ))}
-      </svg>
-    </div>
-  )
-}
-
-function DonutChart({
-  items,
-}: {
-  items: { label: string; value: number; color: string }[]
-}) {
-  const total = items.reduce((sum, item) => sum + item.value, 0)
-
-  let current = 0
-
-  const gradient = items
-    .map((item) => {
-      const start = (current / total) * 360
-      current += item.value
-      const end = (current / total) * 360
-      return `${item.color} ${start}deg ${end}deg`
-    })
-    .join(', ')
-
-  return (
-    <div className="flex flex-col items-center justify-center gap-6 sm:flex-row">
-      <div
-        className="relative flex items-center justify-center rounded-full w-44 h-44"
-        style={{
-          background: `conic-gradient(${gradient})`,
-        }}
-      >
-        <div className="flex flex-col items-center justify-center bg-white rounded-full w-28 h-28">
-          <span className="text-2xl font-bold text-gray-900">
-            {total}
-          </span>
-          <span className="text-xs text-gray-500">Bookings</span>
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        {items.map((item) => (
-          <div
-            key={item.label}
-            className="flex items-center justify-between gap-5 text-sm"
-          >
-            <div className="flex items-center gap-2">
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-gray-700">{item.label}</span>
-            </div>
-
-            <span className="font-bold text-gray-900">
-              {item.value}%
-            </span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function HorizontalBars({
-  items,
-}: {
-  items: { label: string; value: number; icon?: string }[]
-}) {
-  const max = Math.max(...items.map((item) => item.value), 1)
-
-  return (
-    <div className="space-y-5">
-      {items.map((item) => (
-        <div key={item.label}>
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              {item.icon && (
-                <span className="text-lg">{item.icon}</span>
-              )}
-              <span className="text-sm font-medium text-gray-700">
-                {item.label}
-              </span>
-            </div>
-
-            <span className="text-sm font-bold text-gray-900">
-              {item.value}%
-            </span>
-          </div>
-
-          <div className="w-full h-3 overflow-hidden bg-gray-100 rounded-full">
-            <div
-              className="h-full bg-green-600 rounded-full"
-              style={{
-                width: `${(item.value / max) * 100}%`,
-              }}
-            />
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 function BookingsPage() {
+  const { user } = useAuth()
+
+  const [mandis, setMandis] = useState<BackendMandi[]>([])
+  const [bookings, setBookings] = useState<MandiBooking[]>([])
   const [statusFilter, setStatusFilter] = useState<
     'all' | BookingStatus
   >('all')
   const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+
+    const loadBookings = async () => {
+      if (!user?.id) {
+        setError('Unable to identify the logged-in mandi owner.')
+        setLoading(false)
+        return
+      }
+
+      try {
+        setLoading(true)
+        setError('')
+
+        const mandiData = await getMandis()
+
+        if (cancelled) return
+
+        setMandis(mandiData)
+
+        const ownerMandi = mandiData.find(
+          (mandi) => mandi.owner_id === Number(user.id),
+        )
+
+        if (!ownerMandi) {
+          setBookings([])
+          setError('No active mandi is assigned to your account.')
+          return
+        }
+
+        const bookingData = await getMandiBookings(ownerMandi.id)
+
+        if (cancelled) return
+
+        setBookings(bookingData)
+      } catch (err) {
+        if (cancelled) return
+
+        console.error('Failed to load mandi bookings:', err)
+
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to load booking records.',
+        )
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void loadBookings()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
+
+  const currentMandi = useMemo(() => {
+    if (!user?.id) return undefined
+
+    return mandis.find(
+      (mandi) => mandi.owner_id === Number(user.id),
+    )
+  }, [mandis, user?.id])
 
   const filteredBookings = useMemo(() => {
-    return BOOKINGS.filter((booking) => {
+    const searchText = search.trim().toLowerCase()
+
+    return bookings.filter((booking) => {
       const matchesStatus =
         statusFilter === 'all' ||
         booking.status === statusFilter
 
-      const searchText = search.toLowerCase()
+      if (!searchText) {
+        return matchesStatus
+      }
 
       const matchesSearch =
-        booking.id.toLowerCase().includes(searchText) ||
-        booking.farmerName.toLowerCase().includes(searchText) ||
-        booking.crop.toLowerCase().includes(searchText) ||
-        booking.vehicleNumber.toLowerCase().includes(searchText)
+        booking.booking_code.toLowerCase().includes(searchText) ||
+        booking.farmer_name.toLowerCase().includes(searchText) ||
+        booking.crop_type.toLowerCase().includes(searchText) ||
+        booking.vehicle_number.toLowerCase().includes(searchText)
 
       return matchesStatus && matchesSearch
     })
-  }, [search, statusFilter])
+  }, [bookings, search, statusFilter])
 
-  const totalBookings = BOOKINGS.length
+  const totalBookings = bookings.length
 
-  const confirmedBookings = BOOKINGS.filter(
+  const confirmedBookings = bookings.filter(
     (booking) => booking.status === 'confirmed',
   ).length
 
-  const completedBookings = BOOKINGS.filter(
+  const completedBookings = bookings.filter(
     (booking) => booking.status === 'completed',
   ).length
 
-  const cancelledBookings = BOOKINGS.filter(
-    (booking) => booking.status === 'cancelled',
+  const inProgressBookings = bookings.filter(
+    (booking) => booking.status === 'in_progress',
   ).length
 
-  const completedRevenue = BOOKINGS.filter(
-    (booking) => booking.status === 'completed',
-  ).reduce((sum, booking) => sum + booking.revenue, 0)
+  const bookedQuantity = bookings.reduce(
+  (sum, booking) => sum + booking.quantity,
+  0,
+)
 
-  const pendingValue = BOOKINGS.filter(
-    (booking) => booking.status === 'confirmed',
-  ).reduce((sum, booking) => sum + booking.revenue, 0)
+  const sourceCounts = bookings.reduce(
+    (counts, booking) => {
+      const source = booking.booking_source || 'self'
 
-  const procurementVolume = BOOKINGS.filter(
-    (booking) => booking.status !== 'cancelled',
-  ).reduce((sum, booking) => sum + booking.quantity, 0)
+      if (source === 'assisted') {
+        counts.assisted += 1
+      } else if (source === 'walk-in') {
+        counts.walkIn += 1
+      } else {
+        counts.self += 1
+      }
+
+      return counts
+    },
+    {
+      self: 0,
+      assisted: 0,
+      walkIn: 0,
+    },
+  )
+
+  const statusTotal = bookings.length || 1
+
+  const statusDistribution = [
+    {
+      label: 'Confirmed',
+      value: Math.round(
+        (confirmedBookings / statusTotal) * 100,
+      ),
+      count: confirmedBookings,
+      className: 'bg-blue-600',
+    },
+    {
+      label: 'In Progress',
+      value: Math.round(
+        (inProgressBookings / statusTotal) * 100,
+      ),
+      count: inProgressBookings,
+      className: 'bg-orange-500',
+    },
+    {
+      label: 'Completed',
+      value: Math.round(
+        (completedBookings / statusTotal) * 100,
+      ),
+      count: completedBookings,
+      className: 'bg-green-600',
+    },
+
+  ]
+
+  const cropDistribution = useMemo(() => {
+    const counts = new Map<string, number>()
+
+    bookings.forEach((booking) => {
+      const crop = booking.crop_type || 'Other'
+      counts.set(crop, (counts.get(crop) ?? 0) + 1)
+    })
+
+    return Array.from(counts.entries())
+      .map(([label, count]) => ({
+        label,
+        count,
+        percentage: Math.round(
+          (count / (bookings.length || 1)) * 100,
+        ),
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 6)
+  }, [bookings])
+
+  const vehicleDistribution = useMemo(() => {
+    const counts = new Map<string, number>()
+
+    bookings.forEach((booking) => {
+      const vehicleType = booking.vehicle_type || 'Other'
+      counts.set(
+        vehicleType,
+        (counts.get(vehicleType) ?? 0) + 1,
+      )
+    })
+
+    return Array.from(counts.entries())
+      .map(([label, count]) => ({
+        label,
+        count,
+        percentage: Math.round(
+          (count / (bookings.length || 1)) * 100,
+        ),
+      }))
+      .sort((a, b) => b.count - a.count)
+  }, [bookings])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -488,24 +309,44 @@ function BookingsPage() {
               </h1>
 
               <p className="max-w-3xl mt-2 text-sm leading-6 text-gray-500">
-                Monitor farmer bookings, procurement activity,
-                vehicle movement and booking performance from one place.
+                Monitor live farmer bookings, vehicle movement,
+                booking status and produce volume for your mandi.
               </p>
+
+              {currentMandi && (
+                <p className="mt-2 text-sm font-semibold text-green-700">
+                  {currentMandi.name}
+                  {currentMandi.location
+                    ? ` • ${currentMandi.location}`
+                    : ''}
+                </p>
+              )}
             </div>
 
             <div className="p-4 border border-green-200 rounded-xl bg-green-50">
               <p className="text-xs font-semibold tracking-wide text-green-700 uppercase">
                 Centre Status
               </p>
+
               <div className="flex items-center gap-2 mt-1">
                 <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+
                 <span className="font-bold text-green-800">
-                  Booking System Active
+                  {loading
+                    ? 'Loading bookings'
+                    : 'Booking System Active'}
                 </span>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Error */}
+        {error && (
+          <div className="p-4 text-sm text-red-800 border border-red-200 rounded-xl bg-red-50">
+            {error}
+          </div>
+        )}
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -513,11 +354,13 @@ function BookingsPage() {
             <p className="text-sm font-medium text-gray-500">
               Total Bookings
             </p>
+
             <p className="mt-2 text-3xl font-bold text-gray-900">
-              {totalBookings}
+              {loading ? '—' : totalBookings}
             </p>
+
             <p className="mt-2 text-xs text-gray-500">
-              Registered booking records
+              Live booking records
             </p>
           </div>
 
@@ -525,9 +368,11 @@ function BookingsPage() {
             <p className="text-sm font-medium text-gray-500">
               Confirmed
             </p>
+
             <p className="mt-2 text-3xl font-bold text-blue-700">
-              {confirmedBookings}
+              {loading ? '—' : confirmedBookings}
             </p>
+
             <p className="mt-2 text-xs text-blue-600">
               Upcoming farmer visits
             </p>
@@ -537,54 +382,71 @@ function BookingsPage() {
             <p className="text-sm font-medium text-gray-500">
               Completed
             </p>
+
             <p className="mt-2 text-3xl font-bold text-green-700">
-              {completedBookings}
+              {loading ? '—' : completedBookings}
             </p>
+
             <p className="mt-2 text-xs text-green-600">
               Successfully processed
             </p>
           </div>
-
-          <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
-            <p className="text-sm font-medium text-gray-500">
-              Cancelled
-            </p>
-            <p className="mt-2 text-3xl font-bold text-red-600">
-              {cancelledBookings}
-            </p>
-            <p className="mt-2 text-xs text-red-500">
-              Cancelled booking requests
-            </p>
-          </div>
         </div>
 
-        {/* Financial Summary */}
+        {/* Operational Summary */}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
             <p className="text-sm font-medium text-gray-500">
-              Completed Revenue
+              Booked Quantity
             </p>
-            <p className="mt-2 text-2xl font-bold text-green-700">
-              {formatIndianCurrency(completedRevenue)}
-            </p>
-          </div>
 
-          <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
-            <p className="text-sm font-medium text-gray-500">
-              Pending Booking Value
-            </p>
-            <p className="mt-2 text-2xl font-bold text-orange-600">
-              {formatIndianCurrency(pendingValue)}
-            </p>
-          </div>
-
-          <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
-            <p className="text-sm font-medium text-gray-500">
-              Procurement Volume
-            </p>
             <p className="mt-2 text-2xl font-bold text-gray-900">
-              {procurementVolume} Q
+              {loading ? '—' : `${bookedQuantity} Q`}
             </p>
+
+            <p className="mt-1 text-xs text-gray-500">
+              Total quantity across live booking records
+            </p>
+          </div>
+
+          <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
+            <p className="text-sm font-medium text-gray-500">
+              In Progress
+            </p>
+
+            <p className="mt-2 text-2xl font-bold text-orange-600">
+              {loading ? '—' : inProgressBookings}
+            </p>
+
+            <p className="mt-1 text-xs text-gray-500">
+              Currently being processed
+            </p>
+          </div>
+
+          <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
+            <p className="text-sm font-medium text-gray-500">
+              Booking Sources
+            </p>
+
+            <div className="mt-3 space-y-1 text-sm">
+              <p className="text-gray-700">
+                Self: <span className="font-bold">{sourceCounts.self}</span>
+              </p>
+
+              <p className="text-gray-700">
+                Assisted:{' '}
+                <span className="font-bold">
+                  {sourceCounts.assisted}
+                </span>
+              </p>
+
+              <p className="text-gray-700">
+                Walk-in:{' '}
+                <span className="font-bold">
+                  {sourceCounts.walkIn}
+                </span>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -592,33 +454,10 @@ function BookingsPage() {
         <div>
           <SectionTitle
             title="Booking Analytics"
-            description="Operational trends and booking distribution for the mandi."
+            description="Live distributions calculated from booking records returned by the mandi API."
           />
 
           <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-
-            {/* Daily Bookings */}
-            <div className="p-6 bg-white border border-gray-200 shadow-sm rounded-2xl">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-bold text-gray-900">
-                    Daily Booking Trend
-                  </h3>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Number of bookings received during the week
-                  </p>
-                </div>
-
-                <span className="px-2.5 py-1 text-xs font-semibold text-green-700 rounded-full bg-green-50">
-                  Weekly
-                </span>
-              </div>
-
-              <LineChart
-                data={DAILY_BOOKINGS}
-                valueKey="bookings"
-              />
-            </div>
 
             {/* Status Distribution */}
             <div className="p-6 bg-white border border-gray-200 shadow-sm rounded-2xl">
@@ -626,30 +465,42 @@ function BookingsPage() {
                 <h3 className="font-bold text-gray-900">
                   Booking Status Distribution
                 </h3>
+
                 <p className="mt-1 text-xs text-gray-500">
-                  Current status breakdown of all bookings
+                  Current status breakdown of live bookings
                 </p>
               </div>
 
-              <DonutChart
-                items={[
-                  {
-                    label: 'Confirmed',
-                    value: 50,
-                    color: '#2563eb',
-                  },
-                  {
-                    label: 'Completed',
-                    value: 38,
-                    color: '#16a34a',
-                  },
-                  {
-                    label: 'Cancelled',
-                    value: 12,
-                    color: '#dc2626',
-                  },
-                ]}
-              />
+              <div className="space-y-4">
+                {statusDistribution.map((item) => (
+                  <div key={item.label}>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={`w-3 h-3 rounded-full ${item.className}`}
+                        />
+
+                        <span className="text-sm font-medium text-gray-700">
+                          {item.label}
+                        </span>
+                      </div>
+
+                      <span className="text-sm font-bold text-gray-900">
+                        {item.count} ({item.value}%)
+                      </span>
+                    </div>
+
+                    <div className="w-full h-2 overflow-hidden bg-gray-100 rounded-full">
+                      <div
+                        className={`h-full rounded-full ${item.className}`}
+                        style={{
+                          width: `${item.value}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Crop Distribution */}
@@ -658,80 +509,105 @@ function BookingsPage() {
                 <h3 className="font-bold text-gray-900">
                   Crop-wise Bookings
                 </h3>
+
                 <p className="mt-1 text-xs text-gray-500">
-                  Share of bookings by crop category
+                  Distribution calculated from current booking records
                 </p>
               </div>
 
-              <HorizontalBars
-  items={CROP_BOOKINGS.map((item) => ({
-    label: item.crop,
-    value: item.value,
-    icon: getCropIcon(item.crop),
-  }))}
-/>
+              {cropDistribution.length === 0 ? (
+                <p className="py-8 text-sm text-center text-gray-500">
+                  No crop booking data available.
+                </p>
+              ) : (
+                <div className="space-y-5">
+                  {cropDistribution.map((item) => (
+                    <div key={item.label}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-lg">
+                            {getCropIcon(item.label)}
+                          </span>
+
+                          <span className="text-sm font-medium text-gray-700">
+                            {item.label}
+                          </span>
+                        </div>
+
+                        <span className="text-sm font-bold text-gray-900">
+                          {item.percentage}%
+                        </span>
+                      </div>
+
+                      <div className="w-full h-3 overflow-hidden bg-gray-100 rounded-full">
+                        <div
+                          className="h-full bg-green-600 rounded-full"
+                          style={{
+                            width: `${item.percentage}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Vehicle Distribution */}
-            <div className="p-6 bg-white border border-gray-200 shadow-sm rounded-2xl">
+            <div className="p-6 bg-white border border-gray-200 shadow-sm rounded-2xl xl:col-span-2">
               <div className="mb-5">
                 <h3 className="font-bold text-gray-900">
                   Vehicle Type Distribution
                 </h3>
+
                 <p className="mt-1 text-xs text-gray-500">
-                  Incoming farmer vehicles by type
+                  Incoming farmer vehicles from live booking records
                 </p>
               </div>
 
-              <HorizontalBars
-                items={VEHICLE_BOOKINGS.map((item) => ({
-                  label: item.type,
-                  value: item.value,
-                  icon:
-                    item.type === 'Truck'
-                      ? '🚛'
-                      : item.type === 'Tractor'
-                        ? '🚜'
-                        : '🛻',
-                }))}
-              />
-            </div>
-          </div>
-
-          {/* Procurement Trend */}
-          <div className="p-6 mt-6 bg-white border border-gray-200 shadow-sm rounded-2xl">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="font-bold text-gray-900">
-                  Daily Procurement Quantity
-                </h3>
-                <p className="mt-1 text-xs text-gray-500">
-                  Total agricultural produce booked per day
+              {vehicleDistribution.length === 0 ? (
+                <p className="py-8 text-sm text-center text-gray-500">
+                  No vehicle booking data available.
                 </p>
-              </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                  {vehicleDistribution.map((item) => (
+                    <div key={item.label}>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700">
+                          {item.label}
+                        </span>
 
-              <div className="px-3 py-1 text-xs font-semibold text-orange-700 rounded-full bg-orange-50">
-                Quintals
-              </div>
+                        <span className="text-sm font-bold text-gray-900">
+                          {item.count} ({item.percentage}%)
+                        </span>
+                      </div>
+
+                      <div className="w-full h-3 overflow-hidden bg-gray-100 rounded-full">
+                        <div
+                          className="h-full bg-green-600 rounded-full"
+                          style={{
+                            width: `${item.percentage}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-
-            <LineChart
-              data={DAILY_QUANTITY}
-              valueKey="quantity"
-            />
           </div>
         </div>
 
         {/* Filters */}
         <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
           <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-
             <div className="flex flex-wrap gap-2">
               {[
                 { key: 'all', label: 'All Bookings' },
                 { key: 'confirmed', label: 'Confirmed' },
+                { key: 'in_progress', label: 'In Progress' },
                 { key: 'completed', label: 'Completed' },
-                { key: 'cancelled', label: 'Cancelled' },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -771,8 +647,9 @@ function BookingsPage() {
                 <h2 className="text-lg font-bold text-gray-900">
                   Booking Registry
                 </h2>
+
                 <p className="text-sm text-gray-500">
-                  Detailed farmer booking records
+                  Live farmer booking records
                 </p>
               </div>
 
@@ -783,7 +660,7 @@ function BookingsPage() {
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1100px]">
+            <table className="w-full min-w-[1050px]">
               <thead>
                 <tr className="text-xs tracking-wide text-left text-gray-500 uppercase bg-gray-50">
                   <th className="px-6 py-4">Booking</th>
@@ -792,8 +669,9 @@ function BookingsPage() {
                   <th className="px-6 py-4">Quantity</th>
                   <th className="px-6 py-4">Vehicle</th>
                   <th className="px-6 py-4">Visit</th>
-                  <th className="px-6 py-4">Revenue</th>
+                  <th className="px-6 py-4">Source</th>
                   <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Procurement</th>
                 </tr>
               </thead>
 
@@ -805,29 +683,32 @@ function BookingsPage() {
                   >
                     <td className="px-6 py-4">
                       <p className="font-bold text-green-700">
-                        {booking.id}
+                        {booking.booking_code}
                       </p>
+
                       <p className="mt-1 text-xs text-gray-400">
-                        {booking.mandiName}
+                        Booking #{booking.id}
                       </p>
                     </td>
 
                     <td className="px-6 py-4">
                       <p className="font-semibold text-gray-900">
-                        {booking.farmerName}
+                        {booking.farmer_name}
                       </p>
+
                       <p className="mt-1 text-xs text-gray-500">
-                        {booking.farmerPhone}
+                        Farmer ID: {booking.farmer_id}
                       </p>
                     </td>
 
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <span className="text-xl">
-                          {getCropIcon(booking.crop)}
+                          {getCropIcon(booking.crop_type)}
                         </span>
+
                         <span className="font-medium text-gray-800">
-                          {booking.crop}
+                          {booking.crop_type}
                         </span>
                       </div>
                     </td>
@@ -840,26 +721,29 @@ function BookingsPage() {
 
                     <td className="px-6 py-4">
                       <p className="font-semibold text-gray-800">
-                        {booking.vehicleNumber}
+                        {booking.vehicle_number}
                       </p>
+
                       <p className="mt-1 text-xs text-gray-500">
-                        {booking.vehicleType}
+                        {booking.vehicle_type}
                       </p>
                     </td>
 
                     <td className="px-6 py-4">
                       <p className="font-medium text-gray-800">
-                        {formatDate(booking.date)}
+                        {formatDate(booking.slot_date)}
                       </p>
+
                       <p className="mt-1 text-xs text-gray-500">
-                        {booking.time}
+                        {formatTime(booking.start_time)} -{' '}
+                        {formatTime(booking.end_time)}
                       </p>
                     </td>
 
-                    <td className="px-6 py-4 font-bold text-gray-900">
-                      {booking.revenue
-                        ? formatIndianCurrency(booking.revenue)
-                        : '—'}
+                    <td className="px-6 py-4">
+                      <span className="inline-flex px-3 py-1.5 text-xs font-bold capitalize border rounded-full bg-gray-50 text-gray-700 border-gray-200">
+                        {booking.booking_source.replace('-', ' ')}
+                      </span>
                     </td>
 
                     <td className="px-6 py-4">
@@ -868,16 +752,29 @@ function BookingsPage() {
                           booking.status,
                         )}`}
                       >
-                        {booking.status}
+                        {booking.status.replace('_', ' ')}
                       </span>
                     </td>
+
+                    <td className="px-6 py-4">
+  {booking.status === 'completed' ? (
+    <ProcurementCell
+      bookingId={booking.id}
+      bookedQuantity={booking.quantity}
+    />
+  ) : (
+    <span className="text-xs text-gray-400">
+      Available after completion
+    </span>
+  )}
+</td>
                   </tr>
                 ))}
 
-                {filteredBookings.length === 0 && (
+                {filteredBookings.length === 0 && !loading && (
                   <tr>
                     <td
-                      colSpan={8}
+                      colSpan={9}
                       className="px-6 py-16 text-center"
                     >
                       <div className="flex flex-col items-center">
@@ -890,9 +787,22 @@ function BookingsPage() {
                         </h3>
 
                         <p className="mt-1 text-sm text-gray-500">
-                          Try changing the search text or status filter.
+                          {search
+                            ? 'Try changing the search text or status filter.'
+                            : 'No booking records are currently available for this mandi.'}
                         </p>
                       </div>
+                    </td>
+                  </tr>
+                )}
+
+                {loading && (
+                  <tr>
+                    <td
+                      colSpan={9}
+                      className="px-6 py-16 text-sm text-center text-gray-500"
+                    >
+                      Loading live booking records...
                     </td>
                   </tr>
                 )}
@@ -902,19 +812,21 @@ function BookingsPage() {
         </div>
 
         {/* Footer Note */}
-        <div className="flex items-start gap-3 p-5 border border-orange-200 rounded-2xl bg-orange-50">
-          <span className="mt-0.5 text-lg">ℹ️</span>
+        <div className="flex items-start gap-3 p-5 border border-green-200 rounded-2xl bg-green-50">
+          <span className="mt-0.5 text-lg">✓</span>
 
           <div>
-            <p className="text-sm font-bold text-orange-900">
-              Operations note
+            <p className="text-sm font-bold text-green-900">
+              Live operations data
             </p>
 
-            <p className="mt-1 text-xs leading-5 text-orange-800">
-              Analytics on this screen are currently illustrative
-              operational data. Connect the booking API/database to
-              make the charts update automatically from live mandi
-              records.
+            <p className="mt-1 text-xs leading-5 text-green-800">
+              Booking records, status counts, produce volume,
+              booking sources, crop distribution and vehicle
+              distribution are calculated from the live mandi
+              booking API. Revenue and farmer phone data are not
+              displayed because those fields are not currently
+              provided by the backend booking API.
             </p>
           </div>
         </div>

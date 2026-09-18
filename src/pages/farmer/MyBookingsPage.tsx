@@ -1,50 +1,31 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import apiClient from '../../api/client'
+import {
+  getMyProcurements,
+  type Procurement,
+} from '../../api/procurementApi'
 import { formatDate } from '../../utils/formatters'
 
-interface Booking {
-  id: string
-  mandiName: string
-  date: string
-  time: string
-  crop: string
-  quantity: string
+interface BackendBooking {
+  id: number
+  booking_code: string
+  farmer_id: number
+  mandi_id: number
+  mandi_name: string
+  mandi_location: string
+  slot_id: number
+  slot_date: string
+  start_time: string
+  end_time: string
+  vehicle_id: number
+  vehicle_number: string
+  vehicle_type: string
+  crop_type: string
+  quantity: number
   status: string
-  vehicleNumber: string
+  created_at: string
 }
-
-const MOCK_BOOKINGS: Booking[] = [
-  {
-    id: 'KM-2025-00847',
-    mandiName: 'Azadpur Mandi',
-    date: '2025-09-01',
-    time: '6:00 AM - 8:00 AM',
-    crop: 'Wheat',
-    quantity: '10 quintal',
-    status: 'confirmed',
-    vehicleNumber: 'UP-32-AB-1234',
-  },
-  {
-    id: 'KM-2025-00832',
-    mandiName: 'Krishna Mandi',
-    date: '2025-08-28',
-    time: '7:00 AM - 9:00 AM',
-    crop: 'Rice',
-    quantity: '25 quintal',
-    status: 'completed',
-    vehicleNumber: 'UP-32-CD-5678',
-  },
-  {
-    id: 'KM-2025-00819',
-    mandiName: 'Azadpur Mandi',
-    date: '2025-08-25',
-    time: '8:00 AM - 10:00 AM',
-    crop: 'Potato',
-    quantity: '50 quintal',
-    status: 'cancelled',
-    vehicleNumber: 'UP-32-AB-1234',
-  },
-]
 
 const STATUS_META: Record<
   string,
@@ -61,23 +42,17 @@ const STATUS_META: Record<
     dot: 'bg-green-500',
     icon: '✓',
   },
+  in_progress: {
+    label: 'In Progress',
+    className: 'bg-amber-50 text-amber-700 border-amber-200',
+    dot: 'bg-amber-500',
+    icon: '!',
+  },
   completed: {
     label: 'Completed',
     className: 'bg-blue-50 text-blue-700 border-blue-200',
     dot: 'bg-blue-500',
     icon: '✓',
-  },
-  cancelled: {
-    label: 'Cancelled',
-    className: 'bg-red-50 text-red-700 border-red-200',
-    dot: 'bg-red-500',
-    icon: '×',
-  },
-  pending: {
-    label: 'Pending',
-    className: 'bg-amber-50 text-amber-700 border-amber-200',
-    dot: 'bg-amber-500',
-    icon: '!',
   },
 }
 
@@ -94,18 +69,49 @@ const CROP_ICONS: Record<string, string> = {
 
 function MyBookingsPage() {
   const [activeFilter, setActiveFilter] = useState('all')
+  const [bookings, setBookings] = useState<BackendBooking[]>([])
+  const [procurements, setProcurements] = useState<Procurement[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
 
-  const [bookings] = useState<Booking[]>(() => {
+  useEffect(() => {
+  const loadBookings = async () => {
     try {
-      const storedBookings = JSON.parse(
-        localStorage.getItem('kisaan_mitra_bookings') ?? '[]',
-      )
+      setLoading(true)
+      setError('')
 
-      return [...storedBookings, ...MOCK_BOOKINGS]
-    } catch {
-      return MOCK_BOOKINGS
+      const [bookingData, procurementData] = await Promise.all([
+        apiClient<BackendBooking[]>('/bookings/my'),
+        getMyProcurements(),
+      ])
+
+      setBookings(bookingData)
+      setProcurements(procurementData)
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to load your bookings.',
+      )
+    } finally {
+      setLoading(false)
     }
-  })
+  }
+
+  void loadBookings()
+}, [])
+
+  const confirmedCount = bookings.filter(
+    (booking) => booking.status === 'confirmed',
+  ).length
+
+  const inProgressCount = bookings.filter(
+    (booking) => booking.status === 'in_progress',
+  ).length
+
+  const completedCount = bookings.filter(
+    (booking) => booking.status === 'completed',
+  ).length
 
   const filteredBookings = useMemo(() => {
     if (activeFilter === 'all') {
@@ -115,20 +121,27 @@ function MyBookingsPage() {
     return bookings.filter((booking) => booking.status === activeFilter)
   }, [activeFilter, bookings])
 
-  const confirmedCount = bookings.filter(
-    (booking) => booking.status === 'confirmed',
-  ).length
+  const upcomingBooking = useMemo(() => {
+    return (
+      bookings
+        .filter(
+          (booking) =>
+            booking.status === 'confirmed' ||
+            booking.status === 'in_progress',
+        )
+        .sort((a, b) => {
+          const dateTimeA = new Date(
+            `${a.slot_date}T${a.start_time}`,
+          ).getTime()
 
-  const completedCount = bookings.filter(
-    (booking) => booking.status === 'completed',
-  ).length
+          const dateTimeB = new Date(
+            `${b.slot_date}T${b.start_time}`,
+          ).getTime()
 
-  const cancelledCount = bookings.filter(
-    (booking) => booking.status === 'cancelled',
-  ).length
-
-  const upcomingBooking =
-    bookings.find((booking) => booking.status === 'confirmed') ?? null
+          return dateTimeA - dateTimeB
+        })[0] ?? null
+    )
+  }, [bookings])
 
   const getStatusMeta = (status: string) =>
     STATUS_META[status] ?? {
@@ -172,6 +185,18 @@ function MyBookingsPage() {
       </div>
 
       <main className="max-w-6xl px-4 py-8 mx-auto sm:px-6 lg:px-8">
+        {loading && (
+          <div className="p-6 mb-8 text-sm text-center bg-white border rounded-2xl border-slate-200 text-slate-500">
+            Loading your bookings...
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 mb-8 text-sm text-red-700 border border-red-200 rounded-2xl bg-red-50">
+            {error}
+          </div>
+        )}
+
         {/* Statistics */}
         <div className="grid grid-cols-2 gap-4 mb-8 lg:grid-cols-4">
           <div className="p-5 bg-white border shadow-sm rounded-2xl border-slate-200">
@@ -180,6 +205,7 @@ function MyBookingsPage() {
                 <p className="text-xs font-semibold tracking-wide uppercase text-slate-400">
                   Total Bookings
                 </p>
+
                 <p className="mt-2 text-3xl font-bold text-slate-900">
                   {bookings.length}
                 </p>
@@ -197,6 +223,7 @@ function MyBookingsPage() {
                 <p className="text-xs font-semibold tracking-wide text-green-600 uppercase">
                   Confirmed
                 </p>
+
                 <p className="mt-2 text-3xl font-bold text-green-800">
                   {confirmedCount}
                 </p>
@@ -208,12 +235,31 @@ function MyBookingsPage() {
             </div>
           </div>
 
+          <div className="p-5 bg-white border shadow-sm border-amber-100 rounded-2xl">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold tracking-wide uppercase text-amber-600">
+                  In Progress
+                </p>
+
+                <p className="mt-2 text-3xl font-bold text-amber-800">
+                  {inProgressCount}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-center text-amber-700 w-11 h-11 bg-amber-50 rounded-xl">
+                !
+              </div>
+            </div>
+          </div>
+
           <div className="p-5 bg-white border border-blue-100 shadow-sm rounded-2xl">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold tracking-wide text-blue-600 uppercase">
                   Completed
                 </p>
+
                 <p className="mt-2 text-3xl font-bold text-blue-800">
                   {completedCount}
                 </p>
@@ -221,23 +267,6 @@ function MyBookingsPage() {
 
               <div className="flex items-center justify-center text-blue-700 w-11 h-11 bg-blue-50 rounded-xl">
                 ✓
-              </div>
-            </div>
-          </div>
-
-          <div className="p-5 bg-white border border-red-100 shadow-sm rounded-2xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold tracking-wide text-red-600 uppercase">
-                  Cancelled
-                </p>
-                <p className="mt-2 text-3xl font-bold text-red-800">
-                  {cancelledCount}
-                </p>
-              </div>
-
-              <div className="flex items-center justify-center text-red-700 w-11 h-11 bg-red-50 rounded-xl">
-                ×
               </div>
             </div>
           </div>
@@ -257,9 +286,17 @@ function MyBookingsPage() {
                 </h2>
               </div>
 
-              <span className="hidden px-3 py-1 text-xs font-semibold text-green-700 border border-green-200 rounded-full bg-green-50 sm:inline-flex">
-                ● Confirmed
-              </span>
+              {(() => {
+                const status = getStatusMeta(upcomingBooking.status)
+
+                return (
+                  <span
+                    className={`hidden px-3 py-1 text-xs font-semibold border rounded-full sm:inline-flex ${status.className}`}
+                  >
+                    {status.icon} {status.label}
+                  </span>
+                )
+              })()}
             </div>
 
             <div className="relative overflow-hidden bg-white border border-green-200 shadow-sm rounded-2xl">
@@ -275,16 +312,26 @@ function MyBookingsPage() {
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="text-xl font-bold text-slate-900">
-                          {upcomingBooking.mandiName}
+                          {upcomingBooking.mandi_name}
                         </h3>
 
-                        <span className="px-2.5 py-1 text-[10px] font-bold tracking-wide text-green-700 uppercase border border-green-200 rounded-full bg-green-50">
-                          Confirmed
-                        </span>
+                        {(() => {
+                          const status = getStatusMeta(
+                            upcomingBooking.status,
+                          )
+
+                          return (
+                            <span
+                              className={`px-2.5 py-1 text-[10px] font-bold tracking-wide uppercase border rounded-full ${status.className}`}
+                            >
+                              {status.label}
+                            </span>
+                          )
+                        })()}
                       </div>
 
                       <p className="mt-1 text-xs text-slate-500">
-                        Booking ID: {upcomingBooking.id}
+                        Booking ID: {upcomingBooking.booking_code}
                       </p>
                     </div>
                   </div>
@@ -294,8 +341,9 @@ function MyBookingsPage() {
                       <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
                         Date
                       </p>
+
                       <p className="mt-1 text-sm font-bold text-slate-900">
-                        {formatDate(upcomingBooking.date)}
+                        {formatDate(upcomingBooking.slot_date)}
                       </p>
                     </div>
 
@@ -303,8 +351,10 @@ function MyBookingsPage() {
                       <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
                         Time
                       </p>
+
                       <p className="mt-1 text-sm font-bold text-slate-900">
-                        {upcomingBooking.time}
+                        {upcomingBooking.start_time} -{' '}
+                        {upcomingBooking.end_time}
                       </p>
                     </div>
 
@@ -312,9 +362,10 @@ function MyBookingsPage() {
                       <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
                         Produce
                       </p>
+
                       <p className="mt-1 text-sm font-bold text-slate-900">
-                        {CROP_ICONS[upcomingBooking.crop] ?? '🌾'}{' '}
-                        {upcomingBooking.crop}
+                        {CROP_ICONS[upcomingBooking.crop_type] ?? '🌾'}{' '}
+                        {upcomingBooking.crop_type}
                       </p>
                     </div>
 
@@ -322,8 +373,9 @@ function MyBookingsPage() {
                       <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
                         Vehicle
                       </p>
+
                       <p className="mt-1 text-sm font-bold text-slate-900">
-                        {upcomingBooking.vehicleNumber}
+                        {upcomingBooking.vehicle_number}
                       </p>
                     </div>
                   </div>
@@ -333,6 +385,7 @@ function MyBookingsPage() {
               <div className="px-6 py-3 border-t border-green-100 bg-green-50/60">
                 <div className="flex items-center gap-2 text-xs text-green-800">
                   <span>🛡️</span>
+
                   <span>
                     Keep this booking ID available when you arrive at the
                     procurement centre.
@@ -347,21 +400,25 @@ function MyBookingsPage() {
         <div className="p-2 mb-5 overflow-x-auto bg-white border shadow-sm rounded-2xl border-slate-200">
           <div className="flex gap-2 min-w-max">
             {[
-              { id: 'all', label: 'All Bookings', count: bookings.length },
+              {
+                id: 'all',
+                label: 'All Bookings',
+                count: bookings.length,
+              },
               {
                 id: 'confirmed',
                 label: 'Confirmed',
                 count: confirmedCount,
               },
               {
+                id: 'in_progress',
+                label: 'In Progress',
+                count: inProgressCount,
+              },
+              {
                 id: 'completed',
                 label: 'Completed',
                 count: completedCount,
-              },
-              {
-                id: 'cancelled',
-                label: 'Cancelled',
-                count: cancelledCount,
               },
             ].map((filter) => (
               <button
@@ -375,6 +432,7 @@ function MyBookingsPage() {
                 }`}
               >
                 {filter.label}
+
                 <span
                   className={`ml-2 text-xs ${
                     activeFilter === filter.id
@@ -434,12 +492,16 @@ function MyBookingsPage() {
               {filteredBookings.map((booking) => {
                 const status = getStatusMeta(booking.status)
 
+                const procurement = procurements.find(
+                  (item) => item.booking_id === booking.id,
+                )
+
                 return (
                   <div
-                    key={booking.id}
+                    key={booking.booking_code}
                     className="overflow-hidden transition-all bg-white border shadow-sm rounded-2xl border-slate-200 hover:shadow-md hover:border-green-200"
                   >
-                    {/* Card header */}
+                    {/* Card Header */}
                     <div className="p-5 border-b border-slate-100">
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div className="flex items-start gap-4">
@@ -450,7 +512,7 @@ function MyBookingsPage() {
                           <div>
                             <div className="flex flex-wrap items-center gap-2">
                               <h3 className="font-bold text-slate-900">
-                                {booking.mandiName}
+                                {booking.mandi_name}
                               </h3>
 
                               <span
@@ -465,14 +527,13 @@ function MyBookingsPage() {
                             </div>
 
                             <p className="mt-1 text-xs text-slate-400">
-                              Booking ID: {booking.id}
+                              Booking ID: {booking.booking_code}
                             </p>
                           </div>
                         </div>
 
                         <div className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg bg-slate-50 text-slate-600">
-                          🚜
-                          {booking.vehicleNumber}
+                          🚜 {booking.vehicle_number}
                         </div>
                       </div>
                     </div>
@@ -485,7 +546,7 @@ function MyBookingsPage() {
                         </p>
 
                         <p className="mt-1 text-sm font-semibold text-slate-900">
-                          📅 {formatDate(booking.date)}
+                          📅 {formatDate(booking.slot_date)}
                         </p>
                       </div>
 
@@ -495,7 +556,7 @@ function MyBookingsPage() {
                         </p>
 
                         <p className="mt-1 text-sm font-semibold text-slate-900">
-                          🕐 {booking.time}
+                          🕐 {booking.start_time} - {booking.end_time}
                         </p>
                       </div>
 
@@ -505,7 +566,8 @@ function MyBookingsPage() {
                         </p>
 
                         <p className="mt-1 text-sm font-semibold text-slate-900">
-                          {CROP_ICONS[booking.crop] ?? '🌾'} {booking.crop}
+                          {CROP_ICONS[booking.crop_type] ?? '🌾'}{' '}
+                          {booking.crop_type}
                         </p>
                       </div>
 
@@ -515,21 +577,67 @@ function MyBookingsPage() {
                         </p>
 
                         <p className="mt-1 text-sm font-semibold text-slate-900">
-                          {booking.quantity}
+                          {booking.quantity} quintal
                         </p>
                       </div>
                     </div>
+
+                    {booking.status === 'completed' && procurement && (
+  <div className="grid grid-cols-2 gap-4 px-5 py-4 border-t border-green-100 bg-green-50/50 md:grid-cols-4">
+    <div>
+      <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+        Weighed Quantity
+      </p>
+      <p className="mt-1 text-sm font-bold text-slate-900">
+        {procurement.weighed_quantity} quintal
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+        Quality
+      </p>
+      <p className="mt-1 text-sm font-bold text-slate-900">
+        {procurement.quality_grade}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+        Procurement Amount
+      </p>
+      <p className="mt-1 text-sm font-bold text-green-700">
+        ₹{procurement.procurement_amount.toLocaleString('en-IN')}
+      </p>
+    </div>
+
+    <div>
+      <p className="text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+        Payment
+      </p>
+      <p
+        className={`mt-1 text-sm font-bold capitalize ${
+          procurement.payment_status === 'paid'
+            ? 'text-green-700'
+            : 'text-orange-600'
+        }`}
+      >
+        {procurement.payment_status}
+      </p>
+    </div>
+  </div>
+)}
 
                     {/* Footer */}
                     <div className="flex flex-col gap-3 px-5 py-4 border-t bg-slate-50/70 border-slate-100 sm:flex-row sm:items-center sm:justify-between">
                       <p className="text-xs text-slate-500">
                         {booking.status === 'confirmed'
                           ? '✓ Your mandi visit is confirmed.'
-                          : booking.status === 'completed'
-                            ? '✓ Procurement visit completed.'
-                            : booking.status === 'cancelled'
-                              ? 'This booking was cancelled.'
-                              : 'Booking is awaiting confirmation.'}
+                          : booking.status === 'in_progress'
+                            ? 'Your procurement visit is currently in progress.'
+                            : booking.status === 'completed'
+                              ? '✓ Procurement visit completed.'
+                              : 'Booking status is unavailable.'}
                       </p>
 
                       {booking.status === 'confirmed' && (

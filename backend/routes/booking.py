@@ -1,16 +1,12 @@
 from auth.roles import require_role
-from crud.booking import (
-    complete_booking,
-    create_booking,
-    get_booking,
-    get_farmer_bookings,
-    get_mandi_bookings,
-    start_processing,
-)
+from crud.booking import (complete_booking, create_assisted_booking,
+                          create_booking, get_booking, get_farmer_bookings,
+                          get_mandi_bookings, start_processing)
 from crud.mandi import get_mandi_by_id
 from database.connection import engine
 from fastapi import APIRouter, Depends, HTTPException, status
-from schemas.booking import BookingCreate, BookingResponse
+from schemas.booking import (AssistedBookingCreate, BookingCreate,
+                             BookingResponse)
 from sqlalchemy.orm import Session
 
 router = APIRouter(
@@ -42,6 +38,41 @@ def create_new_booking(
             db,
             booking_data,
             current_user["user_id"],
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+@router.post(
+    "/assisted",
+    response_model=BookingResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_new_assisted_booking(
+    booking_data: AssistedBookingCreate,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("mandiOwner")),
+):
+    mandi = get_mandi_by_id(db, booking_data.mandi_id)
+
+    if mandi is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Mandi not found",
+        )
+
+    if mandi.owner_id != current_user["user_id"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have access to this mandi",
+        )
+
+    try:
+        return create_assisted_booking(
+            db,
+            booking_data,
         )
     except ValueError as exc:
         raise HTTPException(

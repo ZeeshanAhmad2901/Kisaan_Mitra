@@ -16,13 +16,15 @@ function Navbar() {
   const navLinks = user
   ? user.role === 'farmer'
     ? [
-        { to: '/farmer/dashboard', label: 'Dashboard' },
-        { to: '/farmer/book-slot', label: 'Book Slot' },
-        { to: '/farmer/bookings', label: 'My Bookings' },
-      ]
+    { to: '/farmer/dashboard', label: 'Dashboard' },
+    { to: '/farmer/book-slot', label: 'Book Slot' },
+    { to: '/farmer/bookings', label: 'My Bookings' },
+    { to: '/farmer/vehicles', label: 'My Vehicles' },
+  ]
     : user.role === 'mandiOwner'
       ? [
           { to: '/mandi-owner/dashboard', label: 'Dashboard' },
+          { to: '/mandi-owner/slots', label: 'Slot Management' },
           { to: '/mandi-owner/queue', label: 'Queue Management' },
           { to: '/mandi-owner/bookings', label: 'Bookings' },
           { to: '/mandi-owner/reports', label: 'Reports' },

@@ -360,59 +360,7 @@ function HomePage() {
               ))
             ) : (
               <>
-                <div className="p-6 border rounded-2xl border-white/10 bg-white/10">
-                  <p className="text-lg font-bold text-white">
-                    Wheat
-                  </p>
 
-                  <p className="mt-1 text-sm text-green-200">
-                    Azadpur Mandi
-                  </p>
-
-                  <p className="mt-6 text-2xl font-black text-white">
-                    ₹2,325
-                  </p>
-
-                  <p className="mt-1 text-xs text-green-200">
-                    {t('home.perQuintal')}
-                  </p>
-                </div>
-
-                <div className="p-6 border rounded-2xl border-white/10 bg-white/10">
-                  <p className="text-lg font-bold text-white">
-                    Rice
-                  </p>
-
-                  <p className="mt-1 text-sm text-green-200">
-                    Azadpur Mandi
-                  </p>
-
-                  <p className="mt-6 text-2xl font-black text-white">
-                    ₹3,250
-                  </p>
-
-                  <p className="mt-1 text-xs text-green-200">
-                    {t('home.perQuintal')}
-                  </p>
-                </div>
-
-                <div className="p-6 border rounded-2xl border-white/10 bg-white/10">
-                  <p className="text-lg font-bold text-white">
-                    Mustard
-                  </p>
-
-                  <p className="mt-1 text-sm text-green-200">
-                    Jawaharlal Nehru Mandi
-                  </p>
-
-                  <p className="mt-6 text-2xl font-black text-white">
-                    ₹5,000
-                  </p>
-
-                  <p className="mt-1 text-xs text-green-200">
-                    {t('home.perQuintal')}
-                  </p>
-                </div>
               </>
             )}
 

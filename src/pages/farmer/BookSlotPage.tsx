@@ -1,104 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
-import type { Slot, Vehicle } from '../../types'
-
-interface MockMandi {
-  id: string
-  name: string
-  location: string
-}
-
-const MOCK_MANDIS: MockMandi[] = [
-  {
-    id: '1',
-    name: 'Azadpur Mandi',
-    location: 'Delhi',
-  },
-  {
-    id: '2',
-    name: 'Krishna Mandi',
-    location: 'Lucknow',
-  },
-  {
-    id: '3',
-    name: 'Jawaharlal Nehru Mandi',
-    location: 'Jaipur',
-  },
-]
-
-const MOCK_SLOTS: Slot[] = [
-  {
-    id: '1',
-    mandiId: '1',
-    mandiName: 'Azadpur Mandi',
-    date: '2025-09-01',
-    time: '6:00 AM - 8:00 AM',
-    totalSlots: 20,
-    bookedSlots: 14,
-    isAvailable: true,
-  },
-  {
-    id: '2',
-    mandiId: '1',
-    mandiName: 'Azadpur Mandi',
-    date: '2025-09-01',
-    time: '8:00 AM - 10:00 AM',
-    totalSlots: 20,
-    bookedSlots: 20,
-    isAvailable: false,
-  },
-  {
-    id: '3',
-    mandiId: '1',
-    mandiName: 'Azadpur Mandi',
-    date: '2025-09-02',
-    time: '6:00 AM - 8:00 AM',
-    totalSlots: 20,
-    bookedSlots: 8,
-    isAvailable: true,
-  },
-  {
-    id: '4',
-    mandiId: '2',
-    mandiName: 'Krishna Mandi',
-    date: '2025-09-01',
-    time: '7:00 AM - 9:00 AM',
-    totalSlots: 15,
-    bookedSlots: 10,
-    isAvailable: true,
-  },
-  {
-    id: '5',
-    mandiId: '3',
-    mandiName: 'Jawaharlal Nehru Mandi',
-    date: '2025-09-01',
-    time: '6:30 AM - 8:30 AM',
-    totalSlots: 25,
-    bookedSlots: 25,
-    isAvailable: false,
-  },
-]
-
-const MOCK_VEHICLES: Vehicle[] = [
-  {
-    id: '1',
-    farmerId: '1',
-    vehicleType: 'tractor',
-    vehicleNumber: 'UP-32-AB-1234',
-    capacity: 10,
-    capacityUnit: 'quintal',
-    isDefault: true,
-  },
-  {
-    id: '2',
-    farmerId: '1',
-    vehicleType: 'truck',
-    vehicleNumber: 'UP-32-CD-5678',
-    capacity: 50,
-    capacityUnit: 'quintal',
-    isDefault: false,
-  },
-]
+import apiClient from '../../api/client'
+import { getMandis, type BackendMandi } from '../../api/mandiApi'
+import { getSlots, type BackendSlot } from '../../api/slotApi'
+import { getMyVehicles, type BackendVehicle } from '../../api/vehicleApi'
 
 const CROPS = [
   'Wheat',
@@ -149,32 +54,96 @@ const STEPS = [
   },
 ]
 
+interface BookingResponse {
+  id: number
+  booking_code: string
+  farmer_id: number
+  mandi_id: number
+  slot_id: number
+  vehicle_id: number
+  crop_type: string
+  quantity: number
+  status: string
+  created_at: string
+}
+
 function BookSlotPage() {
   const navigate = useNavigate()
 
   const [step, setStep] = useState(0)
+
   const [selectedMandi, setSelectedMandi] = useState('')
   const [selectedSlot, setSelectedSlot] = useState('')
   const [crop, setCrop] = useState('')
   const [quantity, setQuantity] = useState('')
   const [vehicleId, setVehicleId] = useState('')
+
+  const [mandis, setMandis] = useState<BackendMandi[]>([])
+  const [slots, setSlots] = useState<BackendSlot[]>([])
+  const [vehicles, setVehicles] = useState<BackendVehicle[]>([])
+
+  const [loadingMandis, setLoadingMandis] = useState(true)
+  const [loadingVehicles, setLoadingVehicles] = useState(true)
+  const [loadingSlots, setLoadingSlots] = useState(false)
   const [loading, setLoading] = useState(false)
 
-  const filteredSlots = selectedMandi
-    ? MOCK_SLOTS.filter((slot) => slot.mandiId === selectedMandi)
-    : []
+  const [error, setError] = useState('')
 
-  const selectedSlotData = MOCK_SLOTS.find(
-    (slot) => slot.id === selectedSlot,
+  const selectedMandiData = mandis.find(
+    (mandi) => String(mandi.id) === selectedMandi,
   )
 
-  const selectedMandiData = MOCK_MANDIS.find(
-    (mandi) => mandi.id === selectedMandi,
+  const selectedSlotData = slots.find(
+    (slot) => String(slot.id) === selectedSlot,
   )
 
-  const selectedVehicle = MOCK_VEHICLES.find(
-    (vehicle) => vehicle.id === vehicleId,
+  const selectedVehicle = vehicles.find(
+    (vehicle) => String(vehicle.id) === vehicleId,
   )
+
+  const filteredSlots = slots
+
+  useEffect(() => {
+    async function loadInitialData() {
+      setError('')
+
+      try {
+        setLoadingMandis(true)
+
+        const mandiData = await getMandis()
+
+        setMandis(mandiData)
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to load mandis.',
+        )
+      } finally {
+        setLoadingMandis(false)
+      }
+
+      try {
+        setLoadingVehicles(true)
+
+        const vehicleData = await getMyVehicles()
+
+        setVehicles(
+          vehicleData.filter((vehicle) => vehicle.is_active),
+        )
+      } catch (err) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : 'Failed to load your vehicles.',
+        )
+      } finally {
+        setLoadingVehicles(false)
+      }
+    }
+
+    loadInitialData()
+  }, [])
 
   const canNext = () => {
     if (step === 0) {
@@ -186,54 +155,115 @@ function BookSlotPage() {
     }
 
     if (step === 2) {
-      return Boolean(crop && quantity && vehicleId)
+      const numericQuantity = Number(quantity)
+
+      return Boolean(
+        crop &&
+          quantity &&
+          vehicleId &&
+          Number.isFinite(numericQuantity) &&
+          numericQuantity > 0,
+      )
     }
 
     return true
   }
 
-  const handleMandiSelect = (mandiId: string) => {
-    setSelectedMandi(mandiId)
-    setSelectedSlot('')
+  const handleMandiSelect = async (mandiId: string) => {
+  setSelectedMandi(mandiId)
+  setSelectedSlot('')
+  setSlots([])
+  setError('')
+  setLoadingSlots(true)
+
+  try {
+    const slotData = await getSlots(mandiId)
+
+    console.log('SELECTED MANDI:', mandiId)
+    console.log('SLOTS FROM API:', slotData)
+
+    const availableSlots = slotData.filter(
+      (slot) => slot.is_active && slot.is_available,
+    )
+
+    console.log('FILTERED SLOTS:', availableSlots)
+
+    setSlots(availableSlots)
+    setStep(1)
+  } catch (err) {
+    setError(
+      err instanceof Error
+        ? err.message
+        : 'Failed to load available slots.',
+    )
+  } finally {
+    setLoadingSlots(false)
   }
+}
 
   const handleBook = async () => {
-    setLoading(true)
-
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    const bookingId = `KM-2025-${String(
-      Math.floor(Math.random() * 90000) + 10000,
-    )}`
-
-    const newBooking = {
-      id: bookingId,
-      mandiName: selectedMandiData?.name ?? 'Azadpur Mandi',
-      date: selectedSlotData?.date ?? '2025-09-01',
-      time: selectedSlotData?.time ?? '6:00 AM - 8:00 AM',
-      crop,
-      quantity: `${quantity} quintal`,
-      status: 'confirmed',
-      vehicleNumber: selectedVehicle?.vehicleNumber ?? '',
+    if (
+      !selectedMandi ||
+      !selectedSlot ||
+      !vehicleId ||
+      !crop ||
+      !quantity
+    ) {
+      return
     }
 
-    const existingBookings = JSON.parse(
-      localStorage.getItem('kisaan_mitra_bookings') ?? '[]',
-    )
+    const numericQuantity = Number(quantity)
 
-    localStorage.setItem(
-      'kisaan_mitra_bookings',
-      JSON.stringify([newBooking, ...existingBookings]),
-    )
+    if (!Number.isFinite(numericQuantity) || numericQuantity <= 0) {
+      setError('Please enter a valid quantity.')
+      return
+    }
 
-    setLoading(false)
-    navigate('/farmer/booking-success')
+    setLoading(true)
+    setError('')
+
+    try {
+      const booking = await apiClient<BookingResponse>(
+        '/bookings/',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            mandi_id: Number(selectedMandi),
+            slot_id: Number(selectedSlot),
+            vehicle_id: Number(vehicleId),
+            crop_type: crop,
+            quantity: numericQuantity,
+          }),
+        },
+      )
+
+      navigate('/farmer/booking-success', {
+  state: {
+    bookingId: booking.booking_code,
+    booking,
+    mandi: selectedMandiData,
+    slot: selectedSlotData,
+    vehicle: selectedVehicle,
+  },
+})
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to create booking.',
+      )
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const getAvailability = (slot: Slot) => {
-    const remaining = slot.totalSlots - slot.bookedSlots
+  const getAvailability = (slot: BackendSlot) => {
+    const remaining = Math.max(
+      slot.total_slots - slot.booked_slots,
+      0,
+    )
 
-    if (!slot.isAvailable) {
+    if (!slot.is_active || !slot.is_available || remaining === 0) {
       return {
         label: 'Full',
         className: 'bg-red-50 text-red-700 border-red-200',
@@ -243,13 +273,15 @@ function BookSlotPage() {
     if (remaining <= 5) {
       return {
         label: `${remaining} left`,
-        className: 'bg-amber-50 text-amber-700 border-amber-200',
+        className:
+          'bg-amber-50 text-amber-700 border-amber-200',
       }
     }
 
     return {
       label: `${remaining} available`,
-      className: 'bg-green-50 text-green-700 border-green-200',
+      className:
+        'bg-green-50 text-green-700 border-green-200',
     }
   }
 
@@ -270,8 +302,8 @@ function BookSlotPage() {
               </h1>
 
               <p className="max-w-2xl mt-2 text-sm leading-6 text-slate-500">
-                Reserve a procurement slot in advance and arrive at your mandi
-                at a planned time.
+                Reserve a procurement slot in advance and arrive at your
+                mandi at a planned time.
               </p>
             </div>
 
@@ -284,6 +316,7 @@ function BookSlotPage() {
                 <p className="text-xs font-semibold tracking-wide text-green-800 uppercase">
                   Secure Booking
                 </p>
+
                 <p className="mt-0.5 text-xs text-green-700">
                   Your visit is digitally recorded
                 </p>
@@ -294,6 +327,26 @@ function BookSlotPage() {
       </div>
 
       <main className="max-w-6xl px-4 py-8 mx-auto sm:px-6 lg:px-8">
+        {/* Error */}
+        {error && (
+          <div className="flex items-start gap-3 p-4 mb-6 text-sm text-red-800 border border-red-200 rounded-xl bg-red-50">
+            <span>⚠️</span>
+
+            <div className="flex-1">
+              <p className="font-semibold">Something went wrong</p>
+              <p className="mt-1">{error}</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setError('')}
+              className="text-red-600 hover:text-red-800"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Progress Stepper */}
         <div className="p-4 mb-8 bg-white border shadow-sm rounded-2xl border-slate-200">
           <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -335,7 +388,9 @@ function BookSlotPage() {
 
                       <p
                         className={`text-sm font-semibold truncate ${
-                          active ? 'text-slate-900' : 'text-slate-600'
+                          active
+                            ? 'text-slate-900'
+                            : 'text-slate-600'
                         }`}
                       >
                         {item.title}
@@ -383,68 +438,99 @@ function BookSlotPage() {
                 <div>
                   <div className="mb-6">
                     <p className="text-sm text-slate-500">
-                      Select the mandi where you want to bring your produce for
-                      procurement.
+                      Select the mandi where you want to bring your
+                      produce for procurement.
                     </p>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {MOCK_MANDIS.map((mandi) => {
-                      const selected = selectedMandi === mandi.id
+                  {loadingMandis ? (
+                    <div className="p-8 text-center border border-dashed rounded-2xl border-slate-300 bg-slate-50">
+                      <div className="text-3xl animate-pulse">
+                        🏪
+                      </div>
 
-                      return (
-                        <button
-                          key={mandi.id}
-                          type="button"
-                          onClick={() => handleMandiSelect(mandi.id)}
-                          className={`relative overflow-hidden text-left rounded-2xl border p-5 transition-all ${
-                            selected
-                              ? 'border-green-500 bg-green-50 shadow-md ring-2 ring-green-100'
-                              : 'border-slate-200 bg-white hover:border-green-300 hover:shadow-md'
-                          }`}
-                        >
-                          {selected && (
-                            <div className="absolute top-0 right-0 px-3 py-1 text-[10px] font-bold tracking-wider text-white uppercase bg-green-700 rounded-bl-xl">
-                              Selected
-                            </div>
-                          )}
+                      <p className="mt-3 font-semibold text-slate-800">
+                        Loading procurement centres...
+                      </p>
 
-                          <div className="flex items-start gap-4">
-                            <div
-                              className={`flex items-center justify-center flex-shrink-0 w-12 h-12 text-xl rounded-xl ${
-                                selected
-                                  ? 'bg-green-700 text-white'
-                                  : 'bg-green-50 text-green-700'
-                              }`}
-                            >
-                              🏪
-                            </div>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Fetching available mandis.
+                      </p>
+                    </div>
+                  ) : mandis.length === 0 ? (
+                    <div className="p-8 text-center border border-dashed rounded-2xl border-slate-300 bg-slate-50">
+                      <div className="text-3xl">🏪</div>
 
-                            <div className="min-w-0">
-                              <h3 className="font-bold text-slate-900">
-                                {mandi.name}
-                              </h3>
+                      <p className="mt-3 font-semibold text-slate-800">
+                        No active mandis available
+                      </p>
 
-                              <p className="flex items-center gap-1 mt-1 text-sm text-slate-500">
-                                <span>📍</span>
-                                {mandi.location}
-                              </p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        Please try again later.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {mandis.map((mandi) => {
+                        const selected =
+                          selectedMandi === String(mandi.id)
 
-                              <div className="flex items-center gap-2 mt-3">
-                                <span className="px-2.5 py-1 text-[11px] font-semibold text-green-700 bg-white border border-green-200 rounded-full">
-                                  Procurement Centre
-                                </span>
+                        return (
+                          <button
+                            key={mandi.id}
+                            type="button"
+                            onClick={() =>
+                              handleMandiSelect(String(mandi.id))
+                            }
+                            className={`relative overflow-hidden text-left rounded-2xl border p-5 transition-all ${
+                              selected
+                                ? 'border-green-500 bg-green-50 shadow-md ring-2 ring-green-100'
+                                : 'border-slate-200 bg-white hover:border-green-300 hover:shadow-md'
+                            }`}
+                          >
+                            {selected && (
+                              <div className="absolute top-0 right-0 px-3 py-1 text-[10px] font-bold tracking-wider text-white uppercase bg-green-700 rounded-bl-xl">
+                                Selected
+                              </div>
+                            )}
 
-                                <span className="px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-full">
-                                  Online Booking
-                                </span>
+                            <div className="flex items-start gap-4">
+                              <div
+                                className={`flex items-center justify-center flex-shrink-0 w-12 h-12 text-xl rounded-xl ${
+                                  selected
+                                    ? 'bg-green-700 text-white'
+                                    : 'bg-green-50 text-green-700'
+                                }`}
+                              >
+                                🏪
+                              </div>
+
+                              <div className="min-w-0">
+                                <h3 className="font-bold text-slate-900">
+                                  {mandi.name}
+                                </h3>
+
+                                <p className="flex items-center gap-1 mt-1 text-sm text-slate-500">
+                                  <span>📍</span>
+                                  {mandi.location}
+                                </p>
+
+                                <div className="flex items-center gap-2 mt-3">
+                                  <span className="px-2.5 py-1 text-[11px] font-semibold text-green-700 bg-white border border-green-200 rounded-full">
+                                    Procurement Centre
+                                  </span>
+
+                                  <span className="px-2.5 py-1 text-[11px] font-semibold text-slate-600 bg-slate-50 border border-slate-200 rounded-full">
+                                    Online Booking
+                                  </span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                        </button>
-                      )
-                    })}
-                  </div>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -457,9 +543,11 @@ function BookSlotPage() {
                         <p className="text-xs font-semibold tracking-wide text-green-700 uppercase">
                           Selected Centre
                         </p>
+
                         <p className="mt-1 font-bold text-slate-900">
                           {selectedMandiData.name}
                         </p>
+
                         <p className="text-xs text-slate-500">
                           📍 {selectedMandiData.location}
                         </p>
@@ -475,104 +563,161 @@ function BookSlotPage() {
                     </div>
                   )}
 
-                  <div className="space-y-4">
-                    {filteredSlots.length === 0 ? (
-                      <div className="p-8 text-center border border-dashed rounded-2xl border-slate-300 bg-slate-50">
-                        <div className="text-3xl">🕐</div>
-                        <p className="mt-3 font-semibold text-slate-800">
-                          No slots available
-                        </p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          Try selecting another mandi.
-                        </p>
+                  {loadingSlots ? (
+                    <div className="p-8 text-center border border-dashed rounded-2xl border-slate-300 bg-slate-50">
+                      <div className="text-3xl animate-pulse">
+                        🕐
                       </div>
-                    ) : (
-                      filteredSlots.map((slot) => {
-                        const selected = selectedSlot === slot.id
-                        const availability = getAvailability(slot)
-                        const remaining =
-                          slot.totalSlots - slot.bookedSlots
-                        const percentage =
-                          (slot.bookedSlots / slot.totalSlots) * 100
 
-                        return (
+                      <p className="mt-3 font-semibold text-slate-800">
+                        Loading available slots...
+                      </p>
+
+                      <p className="mt-1 text-sm text-slate-500">
+                        Checking the latest slot availability.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {filteredSlots.length === 0 ? (
+                        <div className="p-8 text-center border border-dashed rounded-2xl border-slate-300 bg-slate-50">
+                          <div className="text-3xl">🕐</div>
+
+                          <p className="mt-3 font-semibold text-slate-800">
+                            No slots available
+                          </p>
+
+                          <p className="mt-1 text-sm text-slate-500">
+                            Try selecting another mandi.
+                          </p>
+
                           <button
-                            key={slot.id}
                             type="button"
-                            disabled={!slot.isAvailable}
-                            onClick={() => {
-                              if (slot.isAvailable) {
-                                setSelectedSlot(slot.id)
-                              }
-                            }}
-                            className={`w-full text-left rounded-2xl border p-5 transition-all ${
-                              !slot.isAvailable
-                                ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-60'
-                                : selected
-                                  ? 'border-green-500 bg-green-50 shadow-sm ring-2 ring-green-100'
-                                  : 'border-slate-200 hover:border-green-300 hover:shadow-sm'
-                            }`}
+                            onClick={() => setStep(0)}
+                            className="px-4 py-2 mt-4 text-sm font-semibold text-white bg-green-700 rounded-xl hover:bg-green-800"
                           >
-                            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                              <div>
-                                <div className="flex items-center gap-3">
-                                  <div
-                                    className={`flex items-center justify-center w-11 h-11 rounded-xl ${
-                                      selected
-                                        ? 'bg-green-700 text-white'
-                                        : 'bg-slate-100 text-slate-700'
-                                    }`}
+                            Choose Another Mandi
+                          </button>
+                        </div>
+                      ) : (
+                        filteredSlots.map((slot) => {
+                          const selected =
+                            selectedSlot === String(slot.id)
+
+                          const availability =
+                            getAvailability(slot)
+
+                          const remaining = Math.max(
+                            slot.total_slots -
+                              slot.booked_slots,
+                            0,
+                          )
+
+                          const percentage =
+                            slot.total_slots > 0
+                              ? Math.min(
+                                  (slot.booked_slots /
+                                    slot.total_slots) *
+                                    100,
+                                  100,
+                                )
+                              : 0
+
+                          return (
+                            <button
+                              key={slot.id}
+                              type="button"
+                              disabled={
+                                !slot.is_active ||
+                                !slot.is_available
+                              }
+                              onClick={() => {
+                                if (
+                                  slot.is_active &&
+                                  slot.is_available
+                                ) {
+                                  setSelectedSlot(
+                                    String(slot.id),
+                                  )
+                                }
+                              }}
+                              className={`w-full text-left rounded-2xl border p-5 transition-all ${
+                                !slot.is_active ||
+                                !slot.is_available
+                                  ? 'cursor-not-allowed border-slate-200 bg-slate-50 opacity-60'
+                                  : selected
+                                    ? 'border-green-500 bg-green-50 shadow-sm ring-2 ring-green-100'
+                                    : 'border-slate-200 hover:border-green-300 hover:shadow-sm'
+                              }`}
+                            >
+                              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      className={`flex items-center justify-center w-11 h-11 rounded-xl ${
+                                        selected
+                                          ? 'bg-green-700 text-white'
+                                          : 'bg-slate-100 text-slate-700'
+                                      }`}
+                                    >
+                                      🕐
+                                    </div>
+
+                                    <div>
+                                      <p className="font-bold text-slate-900">
+                                        {slot.start_time} -{' '}
+                                        {slot.end_time}
+                                      </p>
+
+                                      <p className="mt-1 text-xs text-slate-500">
+                                        📅 {slot.slot_date}
+                                      </p>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="sm:text-right">
+                                  <span
+                                    className={`inline-flex items-center px-3 py-1.5 text-xs font-bold border rounded-full ${availability.className}`}
                                   >
-                                    🕐
-                                  </div>
-
-                                  <div>
-                                    <p className="font-bold text-slate-900">
-                                      {slot.time}
-                                    </p>
-
-                                    <p className="mt-1 text-xs text-slate-500">
-                                      📅 {slot.date}
-                                    </p>
-                                  </div>
+                                    {availability.label}
+                                  </span>
                                 </div>
                               </div>
 
-                              <div className="sm:text-right">
-                                <span
-                                  className={`inline-flex items-center px-3 py-1.5 text-xs font-bold border rounded-full ${availability.className}`}
-                                >
-                                  {availability.label}
-                                </span>
-                              </div>
-                            </div>
+                              <div className="mt-4">
+                                <div className="flex justify-between mb-1.5 text-[11px] text-slate-500">
+                                  <span>
+                                    Slot utilization
+                                  </span>
 
-                            <div className="mt-4">
-                              <div className="flex justify-between mb-1.5 text-[11px] text-slate-500">
-                                <span>Slot utilization</span>
-                                <span>
-                                  {slot.bookedSlots}/{slot.totalSlots} booked
-                                </span>
-                              </div>
+                                  <span>
+                                    {slot.booked_slots}/
+                                    {slot.total_slots} booked
+                                  </span>
+                                </div>
 
-                              <div className="w-full h-2 overflow-hidden rounded-full bg-slate-100">
-                                <div
-                                  className={`h-full rounded-full ${
-                                    !slot.isAvailable
-                                      ? 'bg-red-400'
-                                      : remaining <= 5
-                                        ? 'bg-amber-400'
-                                        : 'bg-green-500'
-                                  }`}
-                                  style={{ width: `${percentage}%` }}
-                                />
+                                <div className="w-full h-2 overflow-hidden rounded-full bg-slate-100">
+                                  <div
+                                    className={`h-full rounded-full ${
+                                      !slot.is_available
+                                        ? 'bg-red-400'
+                                        : remaining <= 5
+                                          ? 'bg-amber-400'
+                                          : 'bg-green-500'
+                                    }`}
+                                    style={{
+                                      width: `${percentage}%`,
+                                    }}
+                                  />
+                                </div>
                               </div>
-                            </div>
-                          </button>
-                        )
-                      })
-                    )}
-                  </div>
+                            </button>
+                          )
+                        })
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -585,6 +730,7 @@ function BookSlotPage() {
                       <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
                         Produce Information
                       </p>
+
                       <h3 className="mt-1 text-lg font-bold text-slate-900">
                         What crop are you bringing?
                       </h3>
@@ -630,6 +776,7 @@ function BookSlotPage() {
                       <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
                         Quantity
                       </p>
+
                       <h3 className="mt-1 text-lg font-bold text-slate-900">
                         Expected produce quantity
                       </h3>
@@ -639,8 +786,11 @@ function BookSlotPage() {
                       <input
                         type="number"
                         min="1"
+                        step="0.01"
                         value={quantity}
-                        onChange={(event) => setQuantity(event.target.value)}
+                        onChange={(event) =>
+                          setQuantity(event.target.value)
+                        }
                         placeholder="Enter quantity"
                         className="w-full px-4 py-4 pr-24 text-base border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                       />
@@ -657,74 +807,102 @@ function BookSlotPage() {
                       <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
                         Transport
                       </p>
+
                       <h3 className="mt-1 text-lg font-bold text-slate-900">
                         Select your vehicle
                       </h3>
                     </div>
 
-                    <div className="space-y-3">
-                      {MOCK_VEHICLES.map((vehicle) => {
-                        const selected = vehicleId === vehicle.id
+                    {loadingVehicles ? (
+                      <div className="p-6 text-center border border-dashed rounded-2xl border-slate-300 bg-slate-50">
+                        <div className="text-2xl animate-pulse">
+                          🚜
+                        </div>
 
-                        return (
-                          <button
-                            key={vehicle.id}
-                            type="button"
-                            onClick={() => setVehicleId(vehicle.id)}
-                            className={`w-full p-4 rounded-2xl border text-left transition-all ${
-                              selected
-                                ? 'border-green-500 bg-green-50 shadow-sm ring-2 ring-green-100'
-                                : 'border-slate-200 hover:border-green-300'
-                            }`}
-                          >
-                            <div className="flex items-center gap-4">
-                              <div
-                                className={`flex items-center justify-center w-12 h-12 text-2xl rounded-xl ${
-                                  selected
-                                    ? 'bg-green-700 text-white'
-                                    : 'bg-slate-100'
-                                }`}
-                              >
-                                {vehicle.vehicleType === 'tractor'
-                                  ? '🚜'
-                                  : '🚛'}
-                              </div>
+                        <p className="mt-2 text-sm font-semibold text-slate-800">
+                          Loading your vehicles...
+                        </p>
+                      </div>
+                    ) : vehicles.length === 0 ? (
+                      <div className="p-6 text-center border border-dashed rounded-2xl border-slate-300 bg-slate-50">
+                        <div className="text-2xl">🚜</div>
 
-                              <div className="flex-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <p className="font-bold uppercase text-slate-900">
-                                    {vehicle.vehicleNumber}
+                        <p className="mt-2 font-semibold text-slate-800">
+                          No active vehicles found
+                        </p>
+
+                        <p className="mt-1 text-sm text-slate-500">
+                          Please register a vehicle before booking
+                          a mandi slot.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {vehicles.map((vehicle) => {
+                          const selected =
+                            vehicleId === String(vehicle.id)
+
+                          return (
+                            <button
+                              key={vehicle.id}
+                              type="button"
+                              onClick={() =>
+                                setVehicleId(
+                                  String(vehicle.id),
+                                )
+                              }
+                              className={`w-full p-4 rounded-2xl border text-left transition-all ${
+                                selected
+                                  ? 'border-green-500 bg-green-50 shadow-sm ring-2 ring-green-100'
+                                  : 'border-slate-200 hover:border-green-300'
+                              }`}
+                            >
+                              <div className="flex items-center gap-4">
+                                <div
+                                  className={`flex items-center justify-center w-12 h-12 text-2xl rounded-xl ${
+                                    selected
+                                      ? 'bg-green-700 text-white'
+                                      : 'bg-slate-100'
+                                  }`}
+                                >
+                                  {vehicle.vehicle_type
+                                    .toLowerCase()
+                                    .includes('tractor')
+                                    ? '🚜'
+                                    : '🚛'}
+                                </div>
+
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <p className="font-bold uppercase text-slate-900">
+                                      {vehicle.vehicle_number}
+                                    </p>
+                                  </div>
+
+                                  <p className="mt-1 text-sm capitalize text-slate-500">
+                                    {vehicle.vehicle_type}
                                   </p>
+                                </div>
 
-                                  {vehicle.isDefault && (
-                                    <span className="px-2 py-1 text-[10px] font-bold text-green-700 bg-white border border-green-200 rounded-full">
-                                      DEFAULT
+                                <div
+                                  className={`flex items-center justify-center w-6 h-6 rounded-full border-2 ${
+                                    selected
+                                      ? 'border-green-700 bg-green-700'
+                                      : 'border-slate-300'
+                                  }`}
+                                >
+                                  {selected && (
+                                    <span className="text-xs text-white">
+                                      ✓
                                     </span>
                                   )}
                                 </div>
-
-                                <p className="mt-1 text-sm capitalize text-slate-500">
-                                  {vehicle.vehicleType} • Capacity:{' '}
-                                  {vehicle.capacity} {vehicle.capacityUnit}
-                                </p>
                               </div>
-
-                              <div
-                                className={`flex items-center justify-center w-6 h-6 rounded-full border-2 ${
-                                  selected
-                                    ? 'border-green-700 bg-green-700'
-                                    : 'border-slate-300'
-                                }`}
-                              >
-                                {selected && (
-                                  <span className="text-xs text-white">✓</span>
-                                )}
-                              </div>
-                            </div>
-                          </button>
-                        )
-                      })}
-                    </div>
+                            </button>
+                          )
+                        })}
+                      </div>
+                    )}
                   </section>
                 </div>
               )}
@@ -744,7 +922,8 @@ function BookSlotPage() {
                         </h3>
 
                         <p className="mt-1 text-sm text-green-700">
-                          Please verify the details below before confirming.
+                          Please verify the details below before
+                          confirming.
                         </p>
                       </div>
                     </div>
@@ -758,12 +937,17 @@ function BookSlotPage() {
                     </div>
 
                     <div className="divide-y divide-slate-100">
+                      {/* Mandi */}
                       <div className="flex items-start justify-between gap-6 p-5">
                         <div>
-                          <p className="text-xs text-slate-400">Mandi</p>
+                          <p className="text-xs text-slate-400">
+                            Mandi
+                          </p>
+
                           <p className="mt-1 font-semibold text-slate-900">
                             {selectedMandiData?.name}
                           </p>
+
                           <p className="mt-1 text-xs text-slate-500">
                             📍 {selectedMandiData?.location}
                           </p>
@@ -778,44 +962,60 @@ function BookSlotPage() {
                         </button>
                       </div>
 
+                      {/* Date / Time */}
                       <div className="grid gap-5 p-5 sm:grid-cols-2">
                         <div>
-                          <p className="text-xs text-slate-400">Date</p>
+                          <p className="text-xs text-slate-400">
+                            Date
+                          </p>
+
                           <p className="mt-1 font-semibold text-slate-900">
-                            📅 {selectedSlotData?.date}
+                            📅 {selectedSlotData?.slot_date}
                           </p>
                         </div>
 
                         <div>
-                          <p className="text-xs text-slate-400">Time</p>
+                          <p className="text-xs text-slate-400">
+                            Time
+                          </p>
+
                           <p className="mt-1 font-semibold text-slate-900">
-                            🕐 {selectedSlotData?.time}
+                            🕐 {selectedSlotData?.start_time} -{' '}
+                            {selectedSlotData?.end_time}
                           </p>
                         </div>
 
                         <div>
-                          <p className="text-xs text-slate-400">Crop</p>
+                          <p className="text-xs text-slate-400">
+                            Crop
+                          </p>
+
                           <p className="mt-1 font-semibold text-slate-900">
                             {CROP_ICONS[crop]} {crop}
                           </p>
                         </div>
 
                         <div>
-                          <p className="text-xs text-slate-400">Quantity</p>
+                          <p className="text-xs text-slate-400">
+                            Quantity
+                          </p>
+
                           <p className="mt-1 font-semibold text-slate-900">
                             {quantity} quintal
                           </p>
                         </div>
 
                         <div className="sm:col-span-2">
-                          <p className="text-xs text-slate-400">Vehicle</p>
-                          <p className="mt-1 font-semibold text-slate-900">
-                            {selectedVehicle?.vehicleNumber}
+                          <p className="text-xs text-slate-400">
+                            Vehicle
                           </p>
+
+                          <p className="mt-1 font-semibold text-slate-900">
+                            {selectedVehicle?.vehicle_number}
+                          </p>
+
                           <p className="mt-1 text-xs capitalize text-slate-500">
-                            {selectedVehicle?.vehicleType} •{' '}
-                            {selectedVehicle?.capacity}{' '}
-                            {selectedVehicle?.capacityUnit}
+                            {selectedVehicle?.vehicle_type}
                           </p>
                         </div>
                       </div>
@@ -828,7 +1028,9 @@ function BookSlotPage() {
               <div className="flex items-center justify-between pt-6 mt-8 border-t border-slate-100">
                 <button
                   type="button"
-                  onClick={() => setStep(Math.max(0, step - 1))}
+                  onClick={() =>
+                    setStep(Math.max(0, step - 1))
+                  }
                   className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
                     step === 0
                       ? 'invisible'
@@ -854,7 +1056,9 @@ function BookSlotPage() {
                     disabled={loading}
                     className="py-3 text-sm font-semibold text-white transition-all bg-green-700 px-7 rounded-xl hover:bg-green-800 disabled:cursor-not-allowed disabled:bg-green-400"
                   >
-                    {loading ? 'Confirming Booking...' : '✓ Confirm Booking'}
+                    {loading
+                      ? 'Confirming Booking...'
+                      : '✓ Confirm Booking'}
                   </button>
                 )}
               </div>
@@ -868,6 +1072,7 @@ function BookSlotPage() {
                 <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
                   Your Booking
                 </p>
+
                 <h3 className="mt-1 font-bold text-slate-900">
                   Visit Summary
                 </h3>
@@ -909,12 +1114,14 @@ function BookSlotPage() {
                     </p>
 
                     <p className="mt-1 text-sm font-semibold text-slate-900">
-                      {selectedSlotData?.time ?? 'Not selected'}
+                      {selectedSlotData
+                        ? `${selectedSlotData.start_time} - ${selectedSlotData.end_time}`
+                        : 'Not selected'}
                     </p>
 
                     {selectedSlotData && (
                       <p className="text-xs text-slate-500">
-                        {selectedSlotData.date}
+                        {selectedSlotData.slot_date}
                       </p>
                     )}
                   </div>
@@ -955,12 +1162,13 @@ function BookSlotPage() {
                     </p>
 
                     <p className="mt-1 text-sm font-semibold text-slate-900">
-                      {selectedVehicle?.vehicleNumber ?? 'Not selected'}
+                      {selectedVehicle?.vehicle_number ??
+                        'Not selected'}
                     </p>
 
                     {selectedVehicle && (
                       <p className="text-xs capitalize text-slate-500">
-                        {selectedVehicle.vehicleType}
+                        {selectedVehicle.vehicle_type}
                       </p>
                     )}
                   </div>
@@ -977,8 +1185,9 @@ function BookSlotPage() {
                       </p>
 
                       <p className="mt-1 text-[11px] leading-5 text-green-700">
-                        Your booking details will be stored digitally and can
-                        be viewed from My Bookings.
+                        Your booking details will be stored
+                        digitally and can be viewed from My
+                        Bookings.
                       </p>
                     </div>
                   </div>
@@ -997,8 +1206,8 @@ function BookSlotPage() {
               </p>
 
               <p className="mt-2 text-xs leading-5 text-slate-400">
-                Arrive during your confirmed slot to help maintain a smooth
-                procurement queue.
+                Arrive during your confirmed slot to help maintain a
+                smooth procurement queue.
               </p>
             </div>
           </aside>

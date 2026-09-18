@@ -10,6 +10,9 @@ from routes.transport_request import router as transport_request_router
 from routes.user import router as user_router
 from routes.vehicle import router as vehicle_router
 from routes.booking import router as booking_router
+from routes.slot import router as slot_router
+from routes.crop_price import router as crop_price_router
+from routes.procurement import router as procurement_router
 from sqlalchemy import text
 
 from config import ALLOWED_ORIGINS
@@ -33,6 +36,9 @@ app.include_router(user_router)
 app.include_router(mandi_router)
 app.include_router(vehicle_router)
 app.include_router(booking_router)
+app.include_router(slot_router)
+app.include_router(crop_price_router)
+app.include_router(procurement_router)
 app.include_router(login_router)
 app.include_router(protected_router)
 

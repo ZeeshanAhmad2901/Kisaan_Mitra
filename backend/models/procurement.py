@@ -5,15 +5,16 @@ from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 
-class Booking(Base):
-    __tablename__ = "bookings"
+class Procurement(Base):
+    __tablename__ = "procurements"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
 
-    booking_code: Mapped[str] = mapped_column(
-        String(30),
-        unique=True,
+    booking_id: Mapped[int] = mapped_column(
+        Integer,
+        ForeignKey("bookings.id"),
         nullable=False,
+        unique=True,
         index=True,
     )
 
@@ -31,41 +32,42 @@ class Booking(Base):
         index=True,
     )
 
-    slot_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey("slots.id"),
-        nullable=False,
-        index=True,
-    )
-
-    vehicle_id: Mapped[int] = mapped_column(
-        Integer,
-        ForeignKey("vehicles.id"),
-        nullable=False,
-        index=True,
-    )
-
     crop_type: Mapped[str] = mapped_column(
         String(100),
         nullable=False,
     )
 
-    quantity: Mapped[float] = mapped_column(
+    booked_quantity: Mapped[float] = mapped_column(
         Float,
         nullable=False,
     )
 
-    booking_source: Mapped[str] = mapped_column(
-        String(20),
+    weighed_quantity: Mapped[float] = mapped_column(
+        Float,
         nullable=False,
-        server_default=text("'self'"),
+    )
+
+    quality_grade: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+    )
+
+    procurement_amount: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+    )
+
+    procurement_status: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+        server_default=text("'pending'"),
         index=True,
     )
 
-    status: Mapped[str] = mapped_column(
+    payment_status: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
-        server_default=text("'confirmed'"),
+        server_default=text("'pending'"),
         index=True,
     )
 

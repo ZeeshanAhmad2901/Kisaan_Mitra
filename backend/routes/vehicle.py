@@ -6,6 +6,7 @@ from crud.vehicle import (create_vehicle, deactivate_vehicle, get_all_vehicles,
                           get_vehicle_by_id, update_vehicle)
 from database.connection import engine
 from fastapi import APIRouter, Depends, HTTPException
+from models.vehicle import Vehicle
 from schemas.vehicle import VehicleCreate, VehicleListResponse, VehicleResponse
 from sqlalchemy.orm import Session
 
@@ -24,7 +25,7 @@ def get_db():
 def register_vehicle(
     vehicle: VehicleCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role("driver")),
+    current_user: dict = Depends(require_role("farmer")),
 ):
     try:
         return create_vehicle(
@@ -38,6 +39,26 @@ def register_vehicle(
             detail=str(exc),
         ) from exc
 
+
+@router.get(
+    "/my",
+    response_model=list[VehicleResponse],
+)
+def list_my_vehicles(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role("farmer")),
+):
+    vehicles = (
+        db.query(Vehicle)
+        .filter(
+            Vehicle.farmer_id == current_user["user_id"],
+            Vehicle.is_active.is_(True),
+        )
+        .order_by(Vehicle.id)
+        .all()
+    )
+
+    return vehicles
 
 @router.get("/", response_model=VehicleListResponse)
 def list_vehicles(

@@ -1,32 +1,14 @@
-import { useState } from 'react'
-import type { Vehicle } from '../../types'
-
-const MOCK_VEHICLES: Vehicle[] = [
-  {
-    id: '1',
-    farmerId: '1',
-    vehicleType: 'tractor',
-    vehicleNumber: 'UP-32-AB-1234',
-    capacity: 10,
-    capacityUnit: 'quintal',
-    isDefault: true,
-  },
-  {
-    id: '2',
-    farmerId: '1',
-    vehicleType: 'truck',
-    vehicleNumber: 'UP-32-CD-5678',
-    capacity: 50,
-    capacityUnit: 'quintal',
-    isDefault: false,
-  },
-]
+import { useEffect, useState } from 'react'
+import type { BackendVehicle } from '../../api/vehicleApi'
+import { createVehicle, getMyVehicles } from '../../api/vehicleApi'
+import { useAuth } from '../../store/authStore'
 
 const VEHICLE_ICONS: Record<string, string> = {
   tractor: '🚜',
   truck: '🚛',
   tempo: '🚐',
   bolero: '🚙',
+  pickup: '🛻',
   other: '🚗',
 }
 
@@ -35,53 +17,101 @@ const VEHICLE_LABELS: Record<string, string> = {
   truck: 'Truck',
   tempo: 'Tempo',
   bolero: 'Bolero',
+  pickup: 'Pickup',
   other: 'Other Vehicle',
 }
 
 function MyVehiclesPage() {
-  const [vehicles, setVehicles] = useState<Vehicle[]>(MOCK_VEHICLES)
+  const { user } = useAuth()
+
+  const [vehicles, setVehicles] = useState<BackendVehicle[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   const [form, setForm] = useState({
-    vehicleType: 'tractor' as Vehicle['vehicleType'],
+    vehicleType: 'tractor',
     vehicleNumber: '',
-    capacity: '',
-    capacityUnit: 'quintal' as Vehicle['capacityUnit'],
   })
 
-  const handleAdd = () => {
-    if (!form.vehicleNumber.trim() || !form.capacity) return
+  const loadVehicles = async () => {
+    try {
+      setLoading(true)
+      setError('')
 
-    const newVehicle: Vehicle = {
-      id: String(vehicles.length + 1),
-      farmerId: '1',
-      vehicleType: form.vehicleType,
-      vehicleNumber: form.vehicleNumber.toUpperCase(),
-      capacity: Number(form.capacity),
-      capacityUnit: form.capacityUnit,
-      isDefault: vehicles.length === 0,
+      const data = await getMyVehicles()
+      setVehicles(data)
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to load your vehicles.',
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadVehicles()
+  }, [])
+
+  const handleAdd = async () => {
+    const vehicleNumber = form.vehicleNumber.trim().toUpperCase()
+
+    if (!vehicleNumber) {
+      setError('Please enter a vehicle registration number.')
+      return
     }
 
-    setVehicles([...vehicles, newVehicle])
+    if (vehicleNumber.length < 3) {
+      setError('Vehicle registration number must be at least 3 characters.')
+      return
+    }
 
-    setForm({
-      vehicleType: 'tractor',
-      vehicleNumber: '',
-      capacity: '',
-      capacityUnit: 'quintal',
-    })
+    if (!user?.id) {
+      setError('User information is unavailable. Please log in again.')
+      return
+    }
 
-    setShowForm(false)
+    try {
+      setSubmitting(true)
+      setError('')
+      setSuccess('')
+
+      const newVehicle = await createVehicle({
+        farmer_id: Number(user.id),
+        driver_id: null,
+        vehicle_number: vehicleNumber,
+        vehicle_type: form.vehicleType,
+      })
+
+      setVehicles((currentVehicles) => [
+        ...currentVehicles,
+        newVehicle,
+      ])
+
+      setForm({
+        vehicleType: 'tractor',
+        vehicleNumber: '',
+      })
+
+      setShowForm(false)
+      setSuccess('Vehicle registered successfully.')
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Unable to register the vehicle.',
+      )
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const handleDelete = (id: string) => {
-    setVehicles(vehicles.filter((vehicle) => vehicle.id !== id))
-  }
-
-  const totalCapacity = vehicles.reduce(
-    (total, vehicle) => total + vehicle.capacity,
-    0,
-  )
+  const activeVehicles = vehicles.filter((vehicle) => vehicle.is_active)
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 via-white to-slate-50">
@@ -107,7 +137,11 @@ function MyVehiclesPage() {
 
             <button
               type="button"
-              onClick={() => setShowForm(!showForm)}
+              onClick={() => {
+                setShowForm(!showForm)
+                setError('')
+                setSuccess('')
+              }}
               className="inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-semibold text-white transition-all bg-green-700 shadow-sm rounded-xl hover:bg-green-800 hover:shadow-md"
             >
               <span className="text-lg">{showForm ? '×' : '+'}</span>
@@ -118,8 +152,21 @@ function MyVehiclesPage() {
       </div>
 
       <main className="max-w-6xl px-4 py-8 mx-auto sm:px-6 lg:px-8">
+        {/* Messages */}
+        {error && (
+          <div className="p-4 mb-6 text-sm font-medium text-red-800 border border-red-200 rounded-xl bg-red-50">
+            {error}
+          </div>
+        )}
+
+        {success && (
+          <div className="p-4 mb-6 text-sm font-medium text-green-800 border border-green-200 rounded-xl bg-green-50">
+            {success}
+          </div>
+        )}
+
         {/* Statistics */}
-        <div className="grid grid-cols-2 gap-4 mb-8 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 mb-8 sm:grid-cols-2">
           <div className="p-5 bg-white border shadow-sm rounded-2xl border-slate-200">
             <div className="flex items-center justify-between">
               <div>
@@ -128,7 +175,7 @@ function MyVehiclesPage() {
                 </p>
 
                 <p className="mt-2 text-3xl font-bold text-slate-900">
-                  {vehicles.length}
+                  {loading ? '—' : activeVehicles.length}
                 </p>
               </div>
 
@@ -142,39 +189,26 @@ function MyVehiclesPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold tracking-wide text-green-600 uppercase">
-                  Default Vehicle
+                  Registration Status
                 </p>
 
                 <p className="mt-2 text-lg font-bold text-green-800">
-                  {vehicles.find((vehicle) => vehicle.isDefault)
-                    ?.vehicleNumber ?? 'Not set'}
+                  {loading
+                    ? 'Loading...'
+                    : activeVehicles.length > 0
+                      ? 'Active'
+                      : 'No Vehicle'}
+                </p>
+
+                <p className="mt-1 text-xs text-slate-400">
+                  {activeVehicles.length > 0
+                    ? 'Ready for mandi booking'
+                    : 'Register a vehicle to continue'}
                 </p>
               </div>
 
               <div className="flex items-center justify-center w-12 h-12 text-xl rounded-xl bg-green-50">
-                ⭐
-              </div>
-            </div>
-          </div>
-
-          <div className="p-5 bg-white border border-blue-100 shadow-sm rounded-2xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-semibold tracking-wide text-blue-600 uppercase">
-                  Total Capacity
-                </p>
-
-                <p className="mt-2 text-3xl font-bold text-blue-800">
-                  {totalCapacity}
-                </p>
-
-                <p className="mt-1 text-xs text-slate-400">
-                  Combined registered capacity
-                </p>
-              </div>
-
-              <div className="flex items-center justify-center w-12 h-12 text-xl rounded-xl bg-blue-50">
-                📦
+                ✓
               </div>
             </div>
           </div>
@@ -214,7 +248,7 @@ function MyVehiclesPage() {
                     onChange={(event) =>
                       setForm({
                         ...form,
-                        vehicleType: event.target.value as Vehicle['vehicleType'],
+                        vehicleType: event.target.value,
                       })
                     }
                     className="w-full px-4 py-3 text-sm bg-white border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
@@ -223,6 +257,7 @@ function MyVehiclesPage() {
                     <option value="truck">🚛 Truck</option>
                     <option value="tempo">🚐 Tempo</option>
                     <option value="bolero">🚙 Bolero</option>
+                    <option value="pickup">🛻 Pickup</option>
                     <option value="other">🚗 Other</option>
                   </select>
                 </div>
@@ -239,73 +274,36 @@ function MyVehiclesPage() {
                     onChange={(event) =>
                       setForm({
                         ...form,
-                        vehicleNumber: event.target.value,
+                        vehicleNumber: event.target.value.toUpperCase(),
                       })
                     }
-                    placeholder="UP-32-AB-1234"
+                    placeholder="WB39KM1234"
+                    maxLength={20}
                     className="w-full px-4 py-3 text-sm uppercase border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
                   />
-                </div>
-
-                {/* Capacity */}
-                <div>
-                  <label className="block mb-2 text-sm font-semibold text-slate-700">
-                    Loading Capacity
-                  </label>
-
-                  <input
-                    type="number"
-                    min="1"
-                    value={form.capacity}
-                    onChange={(event) =>
-                      setForm({
-                        ...form,
-                        capacity: event.target.value,
-                      })
-                    }
-                    placeholder="10"
-                    className="w-full px-4 py-3 text-sm border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-                </div>
-
-                {/* Unit */}
-                <div>
-                  <label className="block mb-2 text-sm font-semibold text-slate-700">
-                    Capacity Unit
-                  </label>
-
-                  <select
-                    value={form.capacityUnit}
-                    onChange={(event) =>
-                      setForm({
-                        ...form,
-                        capacityUnit:
-                          event.target.value as Vehicle['capacityUnit'],
-                      })
-                    }
-                    className="w-full px-4 py-3 text-sm bg-white border rounded-xl border-slate-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  >
-                    <option value="quintal">Quintal</option>
-                    <option value="tonne">Tonne</option>
-                  </select>
                 </div>
               </div>
 
               <div className="flex flex-col gap-3 pt-6 mt-6 border-t border-slate-100 sm:flex-row sm:justify-end">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
-                  className="px-5 py-3 text-sm font-semibold transition-colors border rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50"
+                  onClick={() => {
+                    setShowForm(false)
+                    setError('')
+                  }}
+                  disabled={submitting}
+                  className="px-5 py-3 text-sm font-semibold transition-colors border rounded-xl border-slate-300 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
 
                 <button
                   type="button"
-                  onClick={handleAdd}
-                  className="px-6 py-3 text-sm font-semibold text-white transition-all bg-green-700 rounded-xl hover:bg-green-800"
+                  onClick={() => void handleAdd()}
+                  disabled={submitting}
+                  className="px-6 py-3 text-sm font-semibold text-white transition-all bg-green-700 rounded-xl hover:bg-green-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  ✓ Register Vehicle
+                  {submitting ? 'Registering...' : '✓ Register Vehicle'}
                 </button>
               </div>
             </div>
@@ -326,11 +324,25 @@ function MyVehiclesPage() {
             </div>
 
             <span className="text-xs text-slate-400">
-              {vehicles.length} vehicle{vehicles.length !== 1 ? 's' : ''}
+              {loading
+                ? 'Loading...'
+                : `${activeVehicles.length} vehicle${activeVehicles.length !== 1 ? 's' : ''}`}
             </span>
           </div>
 
-          {vehicles.length === 0 ? (
+          {loading ? (
+            <div className="p-12 text-center bg-white border shadow-sm rounded-2xl border-slate-200">
+              <div className="text-4xl animate-pulse">🚜</div>
+
+              <h3 className="mt-5 text-lg font-bold text-slate-900">
+                Loading vehicles...
+              </h3>
+
+              <p className="mt-2 text-sm text-slate-500">
+                Fetching your registered vehicles.
+              </p>
+            </div>
+          ) : activeVehicles.length === 0 ? (
             <div className="p-12 text-center bg-white border shadow-sm rounded-2xl border-slate-200">
               <div className="flex items-center justify-center w-20 h-20 mx-auto text-4xl rounded-2xl bg-green-50">
                 🚜
@@ -355,86 +367,74 @@ function MyVehiclesPage() {
             </div>
           ) : (
             <div className="grid gap-5 md:grid-cols-2">
-              {vehicles.map((vehicle) => (
-                <div
-                  key={vehicle.id}
-                  className="relative overflow-hidden transition-all bg-white border shadow-sm rounded-2xl border-slate-200 hover:border-green-200 hover:shadow-md"
-                >
-                  {vehicle.isDefault && (
-                    <div className="absolute top-0 right-0 px-3 py-1.5 text-[10px] font-bold tracking-wide text-white uppercase bg-green-700 rounded-bl-xl">
-                      Default Vehicle
-                    </div>
-                  )}
+              {activeVehicles.map((vehicle) => {
+                const vehicleType = vehicle.vehicle_type.toLowerCase()
 
-                  <div className="p-6">
-                    <div className="flex items-start gap-4">
-                      <div className="flex items-center justify-center flex-shrink-0 w-16 h-16 text-3xl rounded-2xl bg-green-50">
-                        {VEHICLE_ICONS[vehicle.vehicleType] ?? '🚗'}
-                      </div>
+                return (
+                  <div
+                    key={vehicle.id}
+                    className="relative overflow-hidden transition-all bg-white border shadow-sm rounded-2xl border-slate-200 hover:border-green-200 hover:shadow-md"
+                  >
+                    <div className="p-6">
+                      <div className="flex items-start gap-4">
+                        <div className="flex items-center justify-center flex-shrink-0 w-16 h-16 text-3xl rounded-2xl bg-green-50">
+                          {VEHICLE_ICONS[vehicleType] ?? '🚗'}
+                        </div>
 
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
-                          Registered Vehicle
-                        </p>
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
+                            Registered Vehicle
+                          </p>
 
-                        <h3 className="mt-1 text-xl font-bold text-slate-900">
-                          {VEHICLE_LABELS[vehicle.vehicleType] ??
-                            vehicle.vehicleType}
-                        </h3>
+                          <h3 className="mt-1 text-xl font-bold text-slate-900">
+                            {VEHICLE_LABELS[vehicleType] ??
+                              vehicle.vehicle_type}
+                          </h3>
 
-                        <div className="inline-flex items-center gap-2 px-3 py-1.5 mt-2 font-mono text-sm font-bold tracking-wide bg-slate-100 rounded-lg text-slate-800">
-                          {vehicle.vehicleNumber}
+                          <div className="inline-flex items-center gap-2 px-3 py-1.5 mt-2 font-mono text-sm font-bold tracking-wide bg-slate-100 rounded-lg text-slate-800">
+                            {vehicle.vehicle_number}
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-3 pt-5 mt-5 border-t border-slate-100">
-                      <div className="p-3 border rounded-xl border-slate-100 bg-slate-50">
-                        <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
-                          Capacity
-                        </p>
+                      <div className="grid grid-cols-2 gap-3 pt-5 mt-5 border-t border-slate-100">
+                        <div className="p-3 border rounded-xl border-slate-100 bg-slate-50">
+                          <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+                            Vehicle ID
+                          </p>
 
-                        <p className="mt-1 font-bold text-slate-900">
-                          {vehicle.capacity}
-                        </p>
+                          <p className="mt-1 font-bold text-slate-900">
+                            #{vehicle.id}
+                          </p>
 
-                        <p className="text-xs capitalize text-slate-500">
-                          {vehicle.capacityUnit}
-                        </p>
+                          <p className="text-xs text-slate-500">
+                            Registered in system
+                          </p>
+                        </div>
+
+                        <div className="p-3 border rounded-xl border-slate-100 bg-slate-50">
+                          <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+                            Status
+                          </p>
+
+                          <p className="mt-1 font-bold text-green-700">
+                            Active
+                          </p>
+
+                          <p className="text-xs text-slate-500">
+                            Ready for booking
+                          </p>
+                        </div>
                       </div>
 
-                      <div className="p-3 border rounded-xl border-slate-100 bg-slate-50">
-                        <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
-                          Booking Status
-                        </p>
-
-                        <p className="mt-1 font-bold text-green-700">
-                          Available
-                        </p>
-
-                        <p className="text-xs text-slate-500">
-                          Ready for booking
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100">
-                      <div className="flex items-center gap-2 text-xs text-green-700">
+                      <div className="flex items-center gap-2 pt-4 mt-4 text-xs text-green-700 border-t border-slate-100">
                         <span className="w-2 h-2 bg-green-500 rounded-full" />
                         Active registration
                       </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(vehicle.id)}
-                        className="px-3 py-2 text-xs font-semibold text-red-600 transition-colors border border-red-100 rounded-lg hover:bg-red-50"
-                      >
-                        Remove Vehicle
-                      </button>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </section>

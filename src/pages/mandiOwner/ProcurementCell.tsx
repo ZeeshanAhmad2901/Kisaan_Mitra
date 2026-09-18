@@ -197,7 +197,7 @@ export default function ProcurementCell({
       </p>
 
       <p className="text-xs text-gray-500">
-        {procurement.weighed_quantity} Q · Grade {procurement.quality_grade}
+        {procurement.weighed_quantity} Q Â· Grade {procurement.quality_grade}
       </p>
 
       <p className="text-xs">

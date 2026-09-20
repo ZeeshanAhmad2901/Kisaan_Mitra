@@ -279,7 +279,13 @@
     "forgotPassword": "Forgot password?",
     "loginButton": "Login",
     "noAccount": "Don't have an account?",
-    "register": "Register"
+    "register": "Register",
+    "required": "यह फ़ील्ड आवश्यक है",
+    "passwordMinLength": "पासवर्ड कम से कम 6 अक्षरों का होना चाहिए",
+    "superAdminTitle": "सुपर एडमिन लॉगिन",
+    "superAdminSubtitle": "किसान मित्र प्रशासन पैनल तक पहुँचें",
+    "backToLogin": "नियमित लॉगिन पर वापस जाएँ",
+    "superAdminLink": "सुपर एडमिन लॉगिन"
   },
   "farmerDashboard": {
     "serviceLabel": "Government Digital Agriculture Service",

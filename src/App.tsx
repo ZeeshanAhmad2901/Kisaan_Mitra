@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router'
 import Layout from './components/layout/Layout'
 const LoginPage = lazy(() => import('./pages/auth/LoginPage'))
+const SuperAdminLoginPage = lazy(() => import('./pages/auth/SuperAdminLoginPage'))
 const RegisterPage = lazy(() => import('./pages/auth/RegisterPage'))
 const AboutPage = lazy(() => import('./pages/common/AboutPage'))
 const ContactPage = lazy(() => import('./pages/common/ContactPage'))
@@ -45,6 +46,7 @@ function App() {
           <Route path="/services" element={<Layout isHomePage={false}><ServicesPage /></Layout>} />
           <Route path="/contact" element={<Layout isHomePage={false}><ContactPage /></Layout>} />
           <Route path="/login" element={<Layout isHomePage={false}><LoginPage /></Layout>} />
+          <Route path="/super-admin/login" element={<Layout isHomePage={false}><SuperAdminLoginPage /></Layout>} />
           <Route path="/register" element={<Layout isHomePage={false}><RegisterPage /></Layout>} />
           <Route path="/farmer/dashboard" element={<Layout isHomePage={false}><FarmerDashboardPage /></Layout>} />
           <Route path="/farmer/vehicles" element={<Layout isHomePage={false}><MyVehiclesPage /></Layout>} />

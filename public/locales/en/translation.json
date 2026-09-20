@@ -319,7 +319,13 @@
     "forgotPassword": "Forgot password?",
     "loginButton": "Login",
     "noAccount": "Don't have an account?",
-    "register": "Register"
+    "register": "Register",
+    "required": "This field is required",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "superAdminTitle": "Super Admin Login",
+    "superAdminSubtitle": "Access the Kisaan Mitra administration panel",
+    "backToLogin": "Back to regular login",
+    "superAdminLink": "Super Admin Login"
   }
   ,
 

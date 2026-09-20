@@ -208,20 +208,19 @@ export default function MandiOperatorDashboardPage() {
             </h1>
 
             <p className="mt-1 text-sm text-gray-500">
-              {operatorMandi?.name ?? 'Assigned Mandi'} • {operatorMandi?.location}
+              {operatorMandi?.name ?? 'Assigned Mandi'} •{' '}
+              {operatorMandi?.location}
             </p>
           </div>
 
           <div className="px-4 py-3 text-sm bg-white border border-gray-200 shadow-sm rounded-xl">
             <p className="text-gray-500">Operator</p>
-            <p className="font-semibold text-gray-900">
-              {user?.name}
-            </p>
+            <p className="font-semibold text-gray-900">{user?.name}</p>
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <Link
             to="/mandi-operator/assisted-booking"
             className="rounded-2xl border border-green-200 bg-green-50 p-5 transition hover:-translate-y-0.5 hover:shadow-md"
@@ -229,11 +228,30 @@ export default function MandiOperatorDashboardPage() {
             <p className="text-sm font-medium text-green-700">
               Assisted Booking
             </p>
+
             <p className="mt-2 text-lg font-bold text-gray-900">
               Book for Farmer
             </p>
+
             <p className="mt-1 text-sm text-gray-600">
               Create a booking through the help desk.
+            </p>
+          </Link>
+
+          <Link
+            to="/mandi-operator/walk-in-booking"
+            className="rounded-2xl border border-orange-200 bg-orange-50 p-5 transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <p className="text-sm font-medium text-orange-700">
+              Walk-in Booking
+            </p>
+
+            <p className="mt-2 text-lg font-bold text-gray-900">
+              Create Walk-in
+            </p>
+
+            <p className="mt-1 text-sm text-gray-600">
+              Book farmers arriving without a prior slot.
             </p>
           </Link>
 
@@ -244,9 +262,11 @@ export default function MandiOperatorDashboardPage() {
             <p className="text-sm font-medium text-blue-700">
               Queue
             </p>
+
             <p className="mt-2 text-lg font-bold text-gray-900">
               Manage Queue
             </p>
+
             <p className="mt-1 text-sm text-gray-600">
               Monitor and process today's bookings.
             </p>
@@ -256,9 +276,11 @@ export default function MandiOperatorDashboardPage() {
             <p className="text-sm font-medium text-purple-700">
               Today's Assisted
             </p>
+
             <p className="mt-2 text-2xl font-bold text-gray-900">
               {assistedBookings.length}
             </p>
+
             <p className="mt-1 text-sm text-gray-600">
               Help-desk bookings
             </p>
@@ -268,9 +290,11 @@ export default function MandiOperatorDashboardPage() {
             <p className="text-sm font-medium text-orange-700">
               Walk-ins
             </p>
+
             <p className="mt-2 text-2xl font-bold text-gray-900">
               {walkInBookings.length}
             </p>
+
             <p className="mt-1 text-sm text-gray-600">
               Today's walk-in bookings
             </p>
@@ -283,6 +307,7 @@ export default function MandiOperatorDashboardPage() {
             <p className="text-sm text-gray-500">
               Today's Bookings
             </p>
+
             <p className="mt-2 text-3xl font-bold text-gray-900">
               {todayBookings.length}
             </p>
@@ -292,6 +317,7 @@ export default function MandiOperatorDashboardPage() {
             <p className="text-sm text-gray-500">
               Waiting
             </p>
+
             <p className="mt-2 text-3xl font-bold text-yellow-600">
               {confirmedBookings.length}
             </p>
@@ -301,6 +327,7 @@ export default function MandiOperatorDashboardPage() {
             <p className="text-sm text-gray-500">
               Processing
             </p>
+
             <p className="mt-2 text-3xl font-bold text-blue-600">
               {processingBookings.length}
             </p>
@@ -310,6 +337,7 @@ export default function MandiOperatorDashboardPage() {
             <p className="text-sm text-gray-500">
               Completed
             </p>
+
             <p className="mt-2 text-3xl font-bold text-green-600">
               {completedBookings.length}
             </p>
@@ -319,6 +347,7 @@ export default function MandiOperatorDashboardPage() {
             <p className="text-sm text-gray-500">
               Cancelled
             </p>
+
             <p className="mt-2 text-3xl font-bold text-red-600">
               {cancelledBookings.length}
             </p>
@@ -334,6 +363,7 @@ export default function MandiOperatorDashboardPage() {
                 <h2 className="font-bold text-gray-900">
                   Upcoming Queue
                 </h2>
+
                 <p className="text-sm text-gray-500">
                   Confirmed bookings waiting for processing
                 </p>
@@ -409,7 +439,10 @@ export default function MandiOperatorDashboardPage() {
                 <span className="text-3xl font-bold text-gray-900">
                   {utilization}%
                 </span>
-                <span className="text-xs text-gray-500">utilized</span>
+
+                <span className="text-xs text-gray-500">
+                  utilized
+                </span>
               </div>
             </div>
 
@@ -418,14 +451,20 @@ export default function MandiOperatorDashboardPage() {
                 <p className="text-xl font-bold text-gray-900">
                   {totalBookedSlots}
                 </p>
-                <p className="text-xs text-gray-500">Booked</p>
+
+                <p className="text-xs text-gray-500">
+                  Booked
+                </p>
               </div>
 
               <div className="p-3 rounded-xl bg-gray-50">
                 <p className="text-xl font-bold text-gray-900">
                   {totalCapacity}
                 </p>
-                <p className="text-xs text-gray-500">Capacity</p>
+
+                <p className="text-xs text-gray-500">
+                  Capacity
+                </p>
               </div>
             </div>
           </div>
@@ -472,7 +511,9 @@ export default function MandiOperatorDashboardPage() {
                     <div className="h-2 mt-3 overflow-hidden bg-gray-100 rounded-full">
                       <div
                         className="h-full bg-green-500 rounded-full"
-                        style={{ width: `${Math.min(percentage, 100)}%` }}
+                        style={{
+                          width: `${Math.min(percentage, 100)}%`,
+                        }}
                       />
                     </div>
 
@@ -498,6 +539,7 @@ export default function MandiOperatorDashboardPage() {
                 <p className="text-sm text-gray-500">
                   Booked quantity
                 </p>
+
                 <p className="mt-1 text-2xl font-bold text-gray-900">
                   {formatNumber(totalBookedQuantity)}
                 </p>
@@ -507,6 +549,7 @@ export default function MandiOperatorDashboardPage() {
                 <p className="text-sm text-gray-500">
                   Completed quantity
                 </p>
+
                 <p className="mt-1 text-2xl font-bold text-green-600">
                   {formatNumber(completedQuantity)}
                 </p>
@@ -540,6 +583,7 @@ export default function MandiOperatorDashboardPage() {
                       <p className="font-medium text-gray-900">
                         {price.cropName}
                       </p>
+
                       <p className="text-xs text-gray-500">
                         {price.mandiName}
                       </p>
@@ -562,6 +606,7 @@ export default function MandiOperatorDashboardPage() {
               <p className="font-semibold text-gray-900">
                 Operations status
               </p>
+
               <p className="text-sm text-gray-500">
                 Dashboard data is connected to the assigned mandi.
               </p>

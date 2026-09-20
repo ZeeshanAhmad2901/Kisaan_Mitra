@@ -1,18 +1,18 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import {
-  createAssistedBooking,
-  type AssistedBookingCreate,
+    createWalkInBooking,
+    type AssistedBookingCreate,
 } from '../../api/bookingApi'
 import { getMandis, type BackendMandi } from '../../api/mandiApi'
 import { getSlots, type BackendSlot } from '../../api/slotApi'
 import {
-  searchFarmers,
-  type FarmerSearchResult,
+    searchFarmers,
+    type FarmerSearchResult,
 } from '../../api/userApi'
 import {
-  getFarmerVehicles,
-  type BackendVehicle,
+    getFarmerVehicles,
+    type BackendVehicle,
 } from '../../api/vehicleApi'
 import { useAuth } from '../../store/authStore'
 
@@ -35,7 +35,7 @@ const formatTime = (time: string) => {
   })
 }
 
-function AssistedBookingPage() {
+function WalkInBookingPage() {
   const { user } = useAuth()
 
   const [mandis, setMandis] = useState<BackendMandi[]>([])
@@ -66,9 +66,7 @@ function AssistedBookingPage() {
   const operatorMandi = useMemo(() => {
     if (!user?.mandiId) return null
 
-    return (
-      mandis.find((mandi) => mandi.id === user.mandiId) ?? null
-    )
+    return mandis.find((mandi) => mandi.id === user.mandiId) ?? null
   }, [mandis, user?.mandiId])
 
   useEffect(() => {
@@ -81,19 +79,12 @@ function AssistedBookingPage() {
 
         const data = await getMandis()
 
-console.log(
-  'MANDIS FROM API:',
-  JSON.stringify(data, null, 2),
-)
+        if (cancelled) return
 
-if (cancelled) return
-
-setMandis(data)
+        setMandis(data)
 
         if (!user?.mandiId) {
-          setError(
-            'No mandi is assigned to this operator account.',
-          )
+          setError('No mandi is assigned to this operator account.')
         }
       } catch (err) {
         if (cancelled) return
@@ -129,9 +120,7 @@ setMandis(data)
       try {
         setLoadingSlots(true)
 
-        const data = await getSlots(
-          String(operatorMandi.id),
-        )
+        const data = await getSlots(String(operatorMandi.id))
 
         if (cancelled) return
 
@@ -222,9 +211,7 @@ setMandis(data)
       try {
         setLoadingVehicles(true)
 
-        const data = await getFarmerVehicles(
-  selectedFarmer.id,
-)
+        const data = await getFarmerVehicles(selectedFarmer.id)
 
         if (cancelled) return
 
@@ -254,9 +241,7 @@ setMandis(data)
   }, [selectedFarmer])
 
   const selectedSlot = useMemo(
-    () =>
-      slots.find((slot) => slot.id === selectedSlotId) ??
-      null,
+    () => slots.find((slot) => slot.id === selectedSlotId) ?? null,
     [slots, selectedSlotId],
   )
 
@@ -277,9 +262,7 @@ setMandis(data)
     Number(quantity) > 0 &&
     !submitting
 
-  const handleFarmerSelect = (
-    farmer: FarmerSearchResult,
-  ) => {
+  const handleFarmerSelect = (farmer: FarmerSearchResult) => {
     setSelectedFarmer(farmer)
     setSearch(farmer.name)
     setFarmers([])
@@ -332,41 +315,26 @@ setMandis(data)
         vehicle_id: selectedVehicle.id,
         crop_type: cropType.trim(),
         quantity: numericQuantity,
+        booking_source: 'walk-in',
       }
 
-      const booking = await createAssistedBooking(payload)
+      const booking = await createWalkInBooking(payload)
 
-setSuccess(
-  `Booking ${booking.booking_code} created successfully for ${selectedFarmer.name}.`,
-)
+      setSuccess(
+        `Walk-in booking ${booking.booking_code} created successfully for ${selectedFarmer.name}.`,
+      )
 
-setSelectedVehicleId(null)
-setSelectedSlotId(null)
-setCropType('')
-setQuantity('')
-
-window.location.href = '/mandi-operator/queue-management'
       setSelectedVehicleId(null)
       setSelectedSlotId(null)
       setCropType('')
       setQuantity('')
 
-      const refreshedSlots = await getSlots(
-        String(operatorMandi.id),
-      )
-
-      setSlots(
-        refreshedSlots.filter(
-          (slot) =>
-            slot.is_active &&
-            slot.booked_slots < slot.total_slots,
-        ),
-      )
+      window.location.href = '/mandi-operator/queue-management'
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : 'Failed to create assisted booking.',
+          : 'Failed to create walk-in booking.',
       )
     } finally {
       setSubmitting(false)
@@ -377,21 +345,20 @@ window.location.href = '/mandi-operator/queue-management'
     <div className="min-h-screen bg-gray-50">
       <div className="px-4 py-8 mx-auto space-y-8 max-w-7xl sm:px-6 lg:px-8">
 
-        {/* Header */}
         <div className="p-6 bg-white border border-gray-200 shadow-sm rounded-2xl">
           <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-center">
             <div>
-              <div className="inline-flex items-center px-3 py-1 mb-3 text-xs font-bold text-green-700 border border-green-200 rounded-full bg-green-50">
-                OPERATOR HELP DESK
+              <div className="inline-flex items-center px-3 py-1 mb-3 text-xs font-bold text-blue-700 border border-blue-200 rounded-full bg-blue-50">
+                WALK-IN DESK
               </div>
 
               <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                Assisted Booking
+                Walk-in Booking
               </h1>
 
               <p className="max-w-3xl mt-2 text-sm leading-6 text-gray-500">
-                Create a booking on behalf of a farmer using live
-                farmer, vehicle and mandi slot data.
+                Create a live booking for a farmer who arrives at
+                the mandi without a prior booking.
               </p>
 
               {operatorMandi && (
@@ -404,24 +371,23 @@ window.location.href = '/mandi-operator/queue-management'
               )}
             </div>
 
-            <div className="p-4 border border-green-200 rounded-xl bg-green-50">
-              <p className="text-xs font-semibold tracking-wide text-green-700 uppercase">
-                Centre Status
+            <div className="p-4 border border-blue-200 rounded-xl bg-blue-50">
+              <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
+                Desk Status
               </p>
 
               <div className="flex items-center gap-2 mt-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
-                <span className="font-bold text-green-800">
+                <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                <span className="font-bold text-blue-800">
                   {loadingMandis
                     ? 'Loading centre'
-                    : 'Operator Desk Active'}
+                    : 'Walk-in Desk Active'}
                 </span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Messages */}
         {error && (
           <div className="p-4 text-sm font-medium text-red-800 border border-red-200 rounded-xl bg-red-50">
             {error}
@@ -434,10 +400,9 @@ window.location.href = '/mandi-operator/queue-management'
           </div>
         )}
 
-        {/* Step 1 */}
         <section className="p-6 bg-white border border-gray-200 shadow-sm rounded-2xl">
           <div className="flex items-start gap-4 mb-6">
-            <div className="flex items-center justify-center flex-shrink-0 font-bold text-white bg-green-700 rounded-full w-9 h-9">
+            <div className="flex items-center justify-center flex-shrink-0 font-bold text-white bg-blue-700 rounded-full w-9 h-9">
               1
             </div>
 
@@ -447,8 +412,7 @@ window.location.href = '/mandi-operator/queue-management'
               </h2>
 
               <p className="mt-1 text-sm text-gray-500">
-                Search using the farmer's name, phone number or
-                email.
+                Search the farmer who has arrived at the mandi.
               </p>
             </div>
           </div>
@@ -464,7 +428,7 @@ window.location.href = '/mandi-operator/queue-management'
                 setSelectedVehicleId(null)
               }}
               placeholder="Search farmer by name, phone or email..."
-              className="w-full px-4 py-3 text-sm bg-white border border-gray-300 outline-none rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100"
+              className="w-full px-4 py-3 text-sm bg-white border border-gray-300 outline-none rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
             />
 
             {loadingSearch && (
@@ -480,7 +444,7 @@ window.location.href = '/mandi-operator/queue-management'
                     key={farmer.id}
                     type="button"
                     onClick={() => handleFarmerSelect(farmer)}
-                    className="w-full px-4 py-3 text-left border-b border-gray-100 last:border-b-0 hover:bg-green-50"
+                    className="w-full px-4 py-3 text-left border-b border-gray-100 last:border-b-0 hover:bg-blue-50"
                   >
                     <p className="font-semibold text-gray-900">
                       {farmer.name}
@@ -499,8 +463,8 @@ window.location.href = '/mandi-operator/queue-management'
           </div>
 
           {selectedFarmer && (
-            <div className="p-4 mt-4 border border-green-200 rounded-xl bg-green-50">
-              <p className="text-xs font-semibold tracking-wide text-green-700 uppercase">
+            <div className="p-4 mt-4 border border-blue-200 rounded-xl bg-blue-50">
+              <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
                 Selected Farmer
               </p>
 
@@ -515,7 +479,7 @@ window.location.href = '/mandi-operator/queue-management'
                   </p>
                 </div>
 
-                <span className="inline-flex px-3 py-1.5 text-xs font-bold text-green-700 border border-green-200 rounded-full bg-white">
+                <span className="inline-flex px-3 py-1.5 text-xs font-bold text-blue-700 border border-blue-200 rounded-full bg-white">
                   Farmer ID: {selectedFarmer.id}
                 </span>
               </div>
@@ -523,10 +487,9 @@ window.location.href = '/mandi-operator/queue-management'
           )}
         </section>
 
-        {/* Step 2 */}
         <section className="p-6 bg-white border border-gray-200 shadow-sm rounded-2xl">
           <div className="flex items-start gap-4 mb-6">
-            <div className="flex items-center justify-center flex-shrink-0 font-bold text-white bg-green-700 rounded-full w-9 h-9">
+            <div className="flex items-center justify-center flex-shrink-0 font-bold text-white bg-blue-700 rounded-full w-9 h-9">
               2
             </div>
 
@@ -536,8 +499,7 @@ window.location.href = '/mandi-operator/queue-management'
               </h2>
 
               <p className="mt-1 text-sm text-gray-500">
-                Choose an active vehicle registered to the selected
-                farmer.
+                Choose an active vehicle registered to the farmer.
               </p>
             </div>
           </div>
@@ -557,20 +519,17 @@ window.location.href = '/mandi-operator/queue-management'
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {vehicles.map((vehicle) => {
-                const selected =
-                  vehicle.id === selectedVehicleId
+                const selected = vehicle.id === selectedVehicleId
 
                 return (
                   <button
                     key={vehicle.id}
                     type="button"
-                    onClick={() =>
-                      setSelectedVehicleId(vehicle.id)
-                    }
+                    onClick={() => setSelectedVehicleId(vehicle.id)}
                     className={`p-5 text-left border rounded-xl transition ${
                       selected
-                        ? 'border-green-500 bg-green-50 ring-2 ring-green-100'
-                        : 'border-gray-200 bg-white hover:border-green-300'
+                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-100'
+                        : 'border-gray-200 bg-white hover:border-blue-300'
                     }`}
                   >
                     <div className="flex items-center justify-between gap-3">
@@ -585,7 +544,7 @@ window.location.href = '/mandi-operator/queue-management'
                       </div>
 
                       {selected && (
-                        <span className="text-xs font-bold text-green-700">
+                        <span className="text-xs font-bold text-blue-700">
                           Selected
                         </span>
                       )}
@@ -597,10 +556,9 @@ window.location.href = '/mandi-operator/queue-management'
           )}
         </section>
 
-        {/* Step 3 */}
         <section className="p-6 bg-white border border-gray-200 shadow-sm rounded-2xl">
           <div className="flex items-start gap-4 mb-6">
-            <div className="flex items-center justify-center flex-shrink-0 font-bold text-white bg-green-700 rounded-full w-9 h-9">
+            <div className="flex items-center justify-center flex-shrink-0 font-bold text-white bg-blue-700 rounded-full w-9 h-9">
               3
             </div>
 
@@ -610,8 +568,7 @@ window.location.href = '/mandi-operator/queue-management'
               </h2>
 
               <p className="mt-1 text-sm text-gray-500">
-                Only available slots from the operator's assigned
-                mandi are shown.
+                Only currently available slots are shown.
               </p>
             </div>
           </div>
@@ -622,8 +579,7 @@ window.location.href = '/mandi-operator/queue-management'
             </div>
           ) : slots.length === 0 ? (
             <div className="p-5 text-sm text-center text-gray-500 border border-gray-200 rounded-xl">
-              No available slots are currently configured for this
-              mandi.
+              No available slots are currently configured for this mandi.
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -639,8 +595,8 @@ window.location.href = '/mandi-operator/queue-management'
                     onClick={() => setSelectedSlotId(slot.id)}
                     className={`p-5 text-left border rounded-xl transition ${
                       selected
-                        ? 'border-green-500 bg-green-50 ring-2 ring-green-100'
-                        : 'border-gray-200 bg-white hover:border-green-300'
+                        ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-100'
+                        : 'border-gray-200 bg-white hover:border-blue-300'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -649,14 +605,14 @@ window.location.href = '/mandi-operator/queue-management'
                           {formatDate(slot.slot_date)}
                         </p>
 
-                        <p className="mt-1 text-sm font-semibold text-green-700">
+                        <p className="mt-1 text-sm font-semibold text-blue-700">
                           {formatTime(slot.start_time)} -{' '}
                           {formatTime(slot.end_time)}
                         </p>
                       </div>
 
                       {selected && (
-                        <span className="text-xs font-bold text-green-700">
+                        <span className="text-xs font-bold text-blue-700">
                           Selected
                         </span>
                       )}
@@ -678,10 +634,9 @@ window.location.href = '/mandi-operator/queue-management'
           )}
         </section>
 
-        {/* Step 4 */}
         <section className="p-6 bg-white border border-gray-200 shadow-sm rounded-2xl">
           <div className="flex items-start gap-4 mb-6">
-            <div className="flex items-center justify-center flex-shrink-0 font-bold text-white bg-green-700 rounded-full w-9 h-9">
+            <div className="flex items-center justify-center flex-shrink-0 font-bold text-white bg-blue-700 rounded-full w-9 h-9">
               4
             </div>
 
@@ -699,63 +654,58 @@ window.location.href = '/mandi-operator/queue-management'
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
               <label
-                htmlFor="crop-type"
+                htmlFor="walkin-crop-type"
                 className="block mb-2 text-sm font-semibold text-gray-700"
               >
                 Crop Type
               </label>
 
               <input
-                id="crop-type"
+                id="walkin-crop-type"
                 type="text"
                 value={cropType}
-                onChange={(event) =>
-                  setCropType(event.target.value)
-                }
+                onChange={(event) => setCropType(event.target.value)}
                 placeholder="e.g. Wheat"
-                className="w-full px-4 py-3 text-sm bg-white border border-gray-300 outline-none rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                className="w-full px-4 py-3 text-sm bg-white border border-gray-300 outline-none rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
             </div>
 
             <div>
               <label
-                htmlFor="quantity"
+                htmlFor="walkin-quantity"
                 className="block mb-2 text-sm font-semibold text-gray-700"
               >
                 Quantity (Quintals)
               </label>
 
               <input
-                id="quantity"
+                id="walkin-quantity"
                 type="number"
                 min="0.01"
                 step="0.01"
                 value={quantity}
-                onChange={(event) =>
-                  setQuantity(event.target.value)
-                }
+                onChange={(event) => setQuantity(event.target.value)}
                 placeholder="e.g. 25"
-                className="w-full px-4 py-3 text-sm bg-white border border-gray-300 outline-none rounded-xl focus:border-green-500 focus:ring-2 focus:ring-green-100"
+                className="w-full px-4 py-3 text-sm bg-white border border-gray-300 outline-none rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               />
             </div>
           </div>
         </section>
 
-        {/* Review */}
         <section className="p-6 bg-white border border-gray-200 shadow-sm rounded-2xl">
           <div className="flex items-start gap-4 mb-6">
-            <div className="flex items-center justify-center flex-shrink-0 font-bold text-white bg-green-700 rounded-full w-9 h-9">
-              
+            <div className="flex items-center justify-center flex-shrink-0 font-bold text-white bg-blue-700 rounded-full w-9 h-9">
+              5
             </div>
 
             <div>
               <h2 className="text-lg font-bold text-gray-900">
-                Review & Create Booking
+                Review & Create Walk-in Booking
               </h2>
 
               <p className="mt-1 text-sm text-gray-500">
                 Verify the information before creating the live
-                assisted booking.
+                walk-in booking.
               </p>
             </div>
           </div>
@@ -765,7 +715,6 @@ window.location.href = '/mandi-operator/queue-management'
               <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Farmer
               </p>
-
               <p className="mt-1 font-bold text-gray-900">
                 {selectedFarmer?.name ?? 'Not selected'}
               </p>
@@ -775,7 +724,6 @@ window.location.href = '/mandi-operator/queue-management'
               <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Vehicle
               </p>
-
               <p className="mt-1 font-bold text-gray-900">
                 {selectedVehicle
                   ? `${selectedVehicle.vehicle_number} • ${selectedVehicle.vehicle_type}`
@@ -787,12 +735,9 @@ window.location.href = '/mandi-operator/queue-management'
               <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Mandi Slot
               </p>
-
               <p className="mt-1 font-bold text-gray-900">
                 {selectedSlot
-                  ? `${formatDate(
-                      selectedSlot.slot_date,
-                    )} • ${formatTime(
+                  ? `${formatDate(selectedSlot.slot_date)} • ${formatTime(
                       selectedSlot.start_time,
                     )} - ${formatTime(selectedSlot.end_time)}`
                   : 'Not selected'}
@@ -803,12 +748,9 @@ window.location.href = '/mandi-operator/queue-management'
               <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Produce
               </p>
-
               <p className="mt-1 font-bold text-gray-900">
                 {cropType.trim() || 'Not entered'}
-                {quantity
-                  ? ` • ${quantity} Q`
-                  : ''}
+                {quantity ? ` • ${quantity} Q` : ''}
               </p>
             </div>
           </div>
@@ -819,6 +761,7 @@ window.location.href = '/mandi-operator/queue-management'
               onClick={() => {
                 setSelectedFarmer(null)
                 setSearch('')
+                setFarmers([])
                 setVehicles([])
                 setSelectedVehicleId(null)
                 setSelectedSlotId(null)
@@ -837,30 +780,28 @@ window.location.href = '/mandi-operator/queue-management'
               type="button"
               onClick={() => void handleSubmit()}
               disabled={!canSubmit}
-              className="px-6 py-3 text-sm font-bold text-white bg-green-700 rounded-xl hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-3 text-sm font-bold text-white bg-blue-700 rounded-xl hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting
-                ? 'Creating Booking...'
-                : 'Create Assisted Booking'}
+                ? 'Creating Walk-in Booking...'
+                : 'Create Walk-in Booking'}
             </button>
           </div>
         </section>
 
-        {/* Live Data Note */}
-        <div className="flex items-start gap-3 p-5 border border-green-200 rounded-2xl bg-green-50">
+        <div className="flex items-start gap-3 p-5 border border-blue-200 rounded-2xl bg-blue-50">
           <span className="mt-0.5 text-lg">✓</span>
 
           <div>
-            <p className="text-sm font-bold text-green-900">
-              Live booking workflow
+            <p className="text-sm font-bold text-blue-900">
+              Live walk-in workflow
             </p>
 
-            <p className="mt-1 text-xs leading-5 text-green-800">
+            <p className="mt-1 text-xs leading-5 text-blue-800">
               Farmer search, registered vehicles, mandi slots and
-              booking creation are connected to the backend APIs.
-              The booking is created with the assisted booking
-              source and the backend performs the final capacity
-              validation.
+              booking creation use live backend data. The booking is
+              explicitly stored with the walk-in source and capacity
+              is validated by the backend.
             </p>
           </div>
         </div>
@@ -869,4 +810,4 @@ window.location.href = '/mandi-operator/queue-management'
   )
 }
 
-export default AssistedBookingPage
+export default WalkInBookingPage

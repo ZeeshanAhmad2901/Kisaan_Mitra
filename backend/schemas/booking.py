@@ -34,6 +34,14 @@ class AssistedBookingCreate(BaseModel):
     vehicle_id: int = Field(..., gt=0)
     crop_type: str = Field(..., min_length=2, max_length=100)
     quantity: float = Field(..., gt=0)
+    booking_source: str = Field(
+        default="assisted",
+        pattern="^(assisted|walk-in)$",
+    )
+class RescheduleBookingRequest(BaseModel):
+    slot_id: int = Field(..., gt=0)
+
+
 class BookingResponse(BaseModel):
     id: int
     booking_code: str

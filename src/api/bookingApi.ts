@@ -29,6 +29,7 @@ export interface AssistedBookingCreate {
   vehicle_id: number
   crop_type: string
   quantity: number
+  booking_source?: 'assisted' | 'walk-in'
 }
 
 export async function createAssistedBooking(
@@ -42,6 +43,24 @@ export async function createAssistedBooking(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(bookingData),
+    },
+  )
+}
+
+export async function createWalkInBooking(
+  bookingData: AssistedBookingCreate,
+): Promise<MandiBooking> {
+  return apiClient<MandiBooking>(
+    '/bookings/walk-in',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ...bookingData,
+        booking_source: 'walk-in',
+      }),
     },
   )
 }

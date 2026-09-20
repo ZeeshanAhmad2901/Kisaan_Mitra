@@ -1,6 +1,7 @@
 from auth.roles import require_role
 from crud.audit_log import create_audit_log
 from crud.mandi import get_mandi_by_id
+from crud.notification import create_notification
 from crud.procurement import (create_procurement, get_booking_procurement,
                               get_farmer_procurements, get_mandi_procurements,
                               get_procurement, update_procurement)
@@ -57,6 +58,15 @@ def create_new_procurement(
         .first()
     )
 
+    create_notification(
+        db,
+        user_id=procurement.farmer_id,
+        title="Procurement Created",
+        message=f"Procurement for booking {procurement.booking_id} has been created successfully.",
+        notification_type="PROCUREMENT_CREATED",
+        entity_type="procurement",
+        entity_id=str(procurement.id),
+    )
     create_audit_log(
         db,
         actor_id=current_user["user_id"],
@@ -301,6 +311,27 @@ def update_procurement_route(
     update_data = procurement_data.model_dump(
         exclude_unset=True,
     )
+
+    if "payment_status" in update_data:
+        create_notification(
+            db,
+            user_id=procurement.farmer_id,
+            title="Payment Status Updated",
+            message=f"Payment status for your procurement #{procurement.id} is now {procurement.payment_status}.",
+            notification_type="PAYMENT_UPDATED",
+            entity_type="procurement",
+            entity_id=str(procurement.id),
+        )
+    else:
+        create_notification(
+            db,
+            user_id=procurement.farmer_id,
+            title="Procurement Updated",
+            message=f"Your procurement record #{procurement.id} has been updated.",
+            notification_type="PROCUREMENT_UPDATED",
+            entity_type="procurement",
+            entity_id=str(procurement.id),
+        )
 
     create_audit_log(
         db,

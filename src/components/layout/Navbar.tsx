@@ -42,6 +42,10 @@ function Navbar() {
                 label: 'Queue Management',
               },
               {
+  to: '/mandi-operator/walk-in-booking',
+  label: 'Walk-in Booking',
+},
+              {
                 to: '/mandi-operator/qr-verification',
                 label: 'QR Verification',
               },

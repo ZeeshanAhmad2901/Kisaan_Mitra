@@ -22,6 +22,30 @@ export interface MandiBooking {
   updated_at: string
 }
 
+export interface AssistedBookingCreate {
+  farmer_id: number
+  mandi_id: number
+  slot_id: number
+  vehicle_id: number
+  crop_type: string
+  quantity: number
+}
+
+export async function createAssistedBooking(
+  bookingData: AssistedBookingCreate,
+): Promise<MandiBooking> {
+  return apiClient<MandiBooking>(
+    '/bookings/assisted',
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(bookingData),
+    },
+  )
+}
+
 export async function getMandiBookings(
   mandiId: number,
 ): Promise<MandiBooking[]> {

@@ -3,6 +3,10 @@ import { Link } from 'react-router'
 import type { MandiBooking } from '../../api/bookingApi'
 import { getMyBookings } from '../../api/bookingApi'
 import { getCropPrices } from '../../api/mandiApi'
+import {
+  getMyProcurements,
+  type Procurement,
+} from '../../api/procurementApi'
 import type { BackendVehicle } from '../../api/vehicleApi'
 import { getMyVehicles } from '../../api/vehicleApi'
 import type { CropPrice } from '../../types'
@@ -17,6 +21,9 @@ function FarmerDashboardPage() {
 
   const [bookings, setBookings] = useState<MandiBooking[]>([])
   const [loadingBookings, setLoadingBookings] = useState(true)
+
+  const [procurements, setProcurements] = useState<Procurement[]>([])
+  const [loadingProcurements, setLoadingProcurements] = useState(true)
 
   const [farmerName, setFarmerName] = useState('Farmer')
 
@@ -54,9 +61,21 @@ function FarmerDashboardPage() {
       }
     }
 
+    async function loadProcurements() {
+      try {
+        const data = await getMyProcurements()
+        setProcurements(data)
+      } catch {
+        setProcurements([])
+      } finally {
+        setLoadingProcurements(false)
+      }
+    }
+
     loadPrices()
     loadBookings()
     loadVehicles()
+    loadProcurements()
 
     try {
       const storedUser = localStorage.getItem('kisaan_mitra_user')
@@ -138,12 +157,10 @@ function FarmerDashboardPage() {
   }, [prices])
 
   const chartPrices = useMemo(() => {
-    return prices
-      .slice(0, 5)
-      .map((price) => ({
-        name: price.cropName,
-        value: price.modalPrice,
-      }))
+    return prices.slice(0, 5).map((price) => ({
+      name: price.cropName,
+      value: price.modalPrice,
+    }))
   }, [prices])
 
   const maxCropPrice = useMemo(() => {
@@ -153,6 +170,44 @@ function FarmerDashboardPage() {
       ...chartPrices.map((item) => item.value),
     )
   }, [chartPrices])
+
+  const procurementStats = useMemo(() => {
+    const totalValue = procurements.reduce(
+      (sum, item) => sum + item.procurement_amount,
+      0,
+    )
+
+    const paidValue = procurements
+      .filter((item) => item.payment_status === 'paid')
+      .reduce(
+        (sum, item) => sum + item.procurement_amount,
+        0,
+      )
+
+    const paidCount = procurements.filter(
+      (item) => item.payment_status === 'paid',
+    ).length
+
+    const pendingPayment = procurements.filter(
+      (item) => item.payment_status !== 'paid',
+    ).length
+
+    const latest =
+      [...procurements].sort(
+        (a, b) =>
+          new Date(b.updated_at).getTime() -
+          new Date(a.updated_at).getTime(),
+      )[0] ?? null
+
+    return {
+      totalValue,
+      paidValue,
+      paidCount,
+      pendingPayment,
+      count: procurements.length,
+      latest,
+    }
+  }, [procurements])
 
   return (
     <div className="min-h-screen bg-[#f4f7f3] text-gray-900">
@@ -365,89 +420,104 @@ function FarmerDashboardPage() {
           </div>
 
           {/* REGISTERED VEHICLES */}
-<div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
-  <div className="flex items-start justify-between gap-4">
-    <div>
-      <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
-        Registered Vehicles
-      </p>
+          <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
 
-      <p className="mt-2 text-2xl font-black text-orange-700">
-        {loadingVehicles
-          ? '...'
-          : vehicles.filter((vehicle) => vehicle.is_active).length
-              .toString()
-              .padStart(2, '0')}
-      </p>
+            <div className="flex items-start justify-between gap-4">
 
-      <p className="mt-1 text-xs text-gray-500">
-        Active vehicles ready for booking
-      </p>
-    </div>
+              <div>
+                <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
+                  Registered Vehicles
+                </p>
 
-    <div className="px-3 py-2 text-xl bg-orange-100 rounded-xl">
-      🚜
-    </div>
-  </div>
+                <p className="mt-2 text-2xl font-black text-orange-700">
+                  {loadingVehicles
+                    ? '...'
+                    : vehicles
+                        .filter((vehicle) => vehicle.is_active)
+                        .length
+                        .toString()
+                        .padStart(2, '0')}
+                </p>
 
-  {loadingVehicles ? (
-    <div className="p-4 mt-5 text-sm text-gray-500 bg-gray-50 rounded-xl">
-      Loading vehicle details...
-    </div>
-  ) : vehicles.filter((vehicle) => vehicle.is_active).length === 0 ? (
-    <div className="p-4 mt-5 border border-orange-100 bg-orange-50 rounded-xl">
-      <p className="text-sm font-semibold text-gray-800">
-        No active vehicle registered
-      </p>
+                <p className="mt-1 text-xs text-gray-500">
+                  Active vehicles ready for booking
+                </p>
+              </div>
 
-      <p className="mt-1 text-xs text-gray-500">
-        Register a vehicle before booking a mandi slot.
-      </p>
+              <div className="px-3 py-2 text-xl bg-orange-100 rounded-xl">
+                🚜
+              </div>
 
-      <Link
-        to="/farmer/vehicles"
-        className="inline-block mt-3 text-xs font-bold text-orange-700 hover:text-orange-800"
-      >
-        Manage Vehicles →
-      </Link>
-    </div>
-  ) : (
-    <div className="mt-5 space-y-3">
-      {vehicles
-        .filter((vehicle) => vehicle.is_active)
-        .map((vehicle) => (
-          <div
-            key={vehicle.id}
-            className="flex items-center justify-between gap-3 p-4 border border-orange-100 rounded-xl bg-orange-50"
-          >
-            <div className="min-w-0">
-              <p className="text-sm font-black text-gray-900">
-                {vehicle.vehicle_number}
-              </p>
-
-              <p className="mt-1 text-xs text-gray-500">
-                {vehicle.vehicle_type} · Vehicle ID #{vehicle.id}
-              </p>
             </div>
 
-            <span className="px-2.5 py-1 text-[10px] font-bold text-green-700 bg-green-100 rounded-full">
-              ACTIVE
-            </span>
-          </div>
-        ))}
+            {loadingVehicles ? (
+              <div className="p-4 mt-5 text-sm text-gray-500 bg-gray-50 rounded-xl">
+                Loading vehicle details...
+              </div>
+            ) : vehicles.filter(
+                (vehicle) => vehicle.is_active,
+              ).length === 0 ? (
+              <div className="p-4 mt-5 border border-orange-100 bg-orange-50 rounded-xl">
 
-      <Link
-        to="/farmer/vehicles"
-        className="block text-xs font-bold text-center text-orange-700 hover:text-orange-800"
-      >
-        Manage Vehicles →
-      </Link>
-    </div>
-  )}
-</div>
+                <p className="text-sm font-semibold text-gray-800">
+                  No active vehicle registered
+                </p>
+
+                <p className="mt-1 text-xs text-gray-500">
+                  Register a vehicle before booking a mandi slot.
+                </p>
+
+                <Link
+                  to="/farmer/vehicles"
+                  className="inline-block mt-3 text-xs font-bold text-orange-700 hover:text-orange-800"
+                >
+                  Manage Vehicles →
+                </Link>
+
+              </div>
+            ) : (
+              <div className="mt-5 space-y-3">
+
+                {vehicles
+                  .filter((vehicle) => vehicle.is_active)
+                  .map((vehicle) => (
+                    <div
+                      key={vehicle.id}
+                      className="flex items-center justify-between gap-3 p-4 border border-orange-100 rounded-xl bg-orange-50"
+                    >
+
+                      <div className="min-w-0">
+                        <p className="text-sm font-black text-gray-900">
+                          {vehicle.vehicle_number}
+                        </p>
+
+                        <p className="mt-1 text-xs text-gray-500">
+                          {vehicle.vehicle_type} · Vehicle ID #{vehicle.id}
+                        </p>
+                      </div>
+
+                      <span className="px-2.5 py-1 text-[10px] font-bold text-green-700 bg-green-100 rounded-full">
+                        ACTIVE
+                      </span>
+
+                    </div>
+                  ))}
+
+                <Link
+                  to="/farmer/vehicles"
+                  className="block text-xs font-bold text-center text-orange-700 hover:text-orange-800"
+                >
+                  Manage Vehicles →
+                </Link>
+
+              </div>
+            )}
+
+          </div>
 
           {/* CURRENT CROP PRICE */}
           <div className="p-5 bg-white border border-gray-200 shadow-sm rounded-2xl">
+
             <div className="flex items-start justify-between">
 
               <div>
@@ -475,7 +545,207 @@ function FarmerDashboardPage() {
               </div>
 
             </div>
+
           </div>
+
+        </div>
+
+      </section>
+
+      {/* =========================================================
+          PROCUREMENT & PAYMENT OVERVIEW
+      ========================================================= */}
+      <section className="px-4 pb-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
+
+        <div className="overflow-hidden bg-white border border-green-200 shadow-sm rounded-2xl">
+
+          <div className="flex flex-col gap-3 px-6 py-5 border-b border-green-100 sm:flex-row sm:items-center sm:justify-between">
+
+            <div>
+              <p className="text-xs font-bold tracking-widest text-green-700 uppercase">
+                Financial Records
+              </p>
+
+              <h2 className="mt-1 text-xl font-black text-gray-900">
+                Procurement & Payment
+              </h2>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Your actual procurement and payment records from the mandi.
+              </p>
+            </div>
+
+            <Link
+              to="/farmer/bookings"
+              className="text-sm font-bold text-green-700 hover:text-green-900"
+            >
+              View full records →
+            </Link>
+
+          </div>
+
+          <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
+
+            {/* TOTAL PROCUREMENT */}
+            <div className="p-5 border border-green-100 bg-green-50 rounded-2xl">
+
+              <p className="text-xs font-bold tracking-wider text-green-700 uppercase">
+                Total Procurement
+              </p>
+
+              <p className="mt-2 text-2xl font-black text-green-900">
+                {loadingProcurements
+                  ? '...'
+                  : formatIndianCurrency(
+                      procurementStats.totalValue,
+                    )}
+              </p>
+
+              <p className="mt-1 text-xs text-green-700">
+                {procurementStats.count} completed record
+                {procurementStats.count !== 1 ? 's' : ''}
+              </p>
+
+            </div>
+
+            {/* PAID AMOUNT */}
+            <div className="p-5 border border-blue-100 bg-blue-50 rounded-2xl">
+
+              <p className="text-xs font-bold tracking-wider text-blue-700 uppercase">
+                Paid Amount
+              </p>
+
+              <p className="mt-2 text-2xl font-black text-blue-900">
+                {loadingProcurements
+                  ? '...'
+                  : formatIndianCurrency(
+                      procurementStats.paidValue,
+                    )}
+              </p>
+
+              <p className="mt-1 text-xs text-blue-700">
+                Successfully paid
+              </p>
+
+            </div>
+
+            {/* PAID RECORDS */}
+            <div className="p-5 border bg-emerald-50 border-emerald-100 rounded-2xl">
+
+              <p className="text-xs font-bold tracking-wider uppercase text-emerald-700">
+                Paid Records
+              </p>
+
+              <p className="mt-2 text-2xl font-black text-emerald-900">
+                {loadingProcurements
+                  ? '...'
+                  : procurementStats.paidCount}
+              </p>
+
+              <p className="mt-1 text-xs text-emerald-700">
+                Payment completed
+              </p>
+
+            </div>
+
+            {/* PENDING PAYMENT */}
+            <div className="p-5 border border-orange-100 bg-orange-50 rounded-2xl">
+
+              <p className="text-xs font-bold tracking-wider text-orange-700 uppercase">
+                Pending Payment
+              </p>
+
+              <p className="mt-2 text-2xl font-black text-orange-900">
+                {loadingProcurements
+                  ? '...'
+                  : procurementStats.pendingPayment}
+              </p>
+
+              <p className="mt-1 text-xs text-orange-700">
+                Awaiting payment
+              </p>
+
+            </div>
+
+          </div>
+
+          {/* LATEST PROCUREMENT */}
+          {loadingProcurements ? (
+            <div className="px-6 pb-6">
+              <div className="bg-gray-100 h-28 rounded-2xl animate-pulse" />
+            </div>
+          ) : procurementStats.latest ? (
+            <div className="px-6 pb-6">
+
+              <div className="p-5 border border-gray-200 rounded-2xl bg-gray-50">
+
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+
+                  <div>
+                    <p className="text-xs font-bold tracking-widest text-gray-500 uppercase">
+                      Latest Procurement
+                    </p>
+
+                    <h3 className="mt-1 text-lg font-black text-gray-900">
+                      {procurementStats.latest.crop_type}
+                    </h3>
+
+                    <p className="mt-1 text-sm text-gray-500">
+                      Weighed:{' '}
+                      <span className="font-semibold text-gray-800">
+                        {procurementStats.latest.weighed_quantity} quintal
+                      </span>
+
+                      {' · '}
+
+                      Grade:{' '}
+                      <span className="font-semibold text-gray-800">
+                        {procurementStats.latest.quality_grade}
+                      </span>
+                    </p>
+                  </div>
+
+                  <div className="text-left sm:text-right">
+
+                    <p className="text-xs font-semibold text-gray-500">
+                      Procurement Amount
+                    </p>
+
+                    <p className="mt-1 text-xl font-black text-gray-900">
+                      {formatIndianCurrency(
+                        procurementStats.latest.procurement_amount,
+                      )}
+                    </p>
+
+                    <span
+                      className={`inline-flex mt-2 px-3 py-1 rounded-full text-xs font-bold ${
+                        procurementStats.latest.payment_status === 'paid'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-orange-100 text-orange-800'
+                      }`}
+                    >
+                      {procurementStats.latest.payment_status === 'paid'
+                        ? '✓ PAID'
+                        : 'PAYMENT PENDING'}
+                    </span>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+          ) : (
+            <div className="px-6 pb-6">
+
+              <div className="p-5 text-sm text-gray-500 border border-gray-200 rounded-2xl bg-gray-50">
+                No procurement records are available yet. Your procurement
+                details will appear here after your mandi visit is processed.
+              </div>
+
+            </div>
+          )}
 
         </div>
 
@@ -591,6 +861,7 @@ function FarmerDashboardPage() {
                     <div key={item.name}>
 
                       <div className="flex items-center justify-between gap-3 mb-2">
+
                         <span className="text-sm font-bold text-gray-800">
                           {item.name}
                         </span>
@@ -598,13 +869,16 @@ function FarmerDashboardPage() {
                         <span className="text-sm font-black text-green-800">
                           {formatIndianCurrency(item.value)}
                         </span>
+
                       </div>
 
                       <div className="h-3 overflow-hidden bg-gray-100 rounded-full">
+
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-green-700 to-emerald-500"
                           style={{ width }}
                         />
+
                       </div>
 
                     </div>
@@ -657,6 +931,7 @@ function FarmerDashboardPage() {
             <div className="grid gap-4 mt-6 sm:grid-cols-3">
 
               <div className="p-4 bg-white rounded-xl">
+
                 <p className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
                   Date
                 </p>
@@ -674,9 +949,11 @@ function FarmerDashboardPage() {
                         })
                       : 'N/A'}
                 </p>
+
               </div>
 
               <div className="p-4 bg-white rounded-xl">
+
                 <p className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
                   Time
                 </p>
@@ -686,9 +963,11 @@ function FarmerDashboardPage() {
                     ? `${upcomingBooking.start_time.slice(0, 5)} - ${upcomingBooking.end_time.slice(0, 5)}`
                     : 'N/A'}
                 </p>
+
               </div>
 
               <div className="p-4 bg-white rounded-xl">
+
                 <p className="text-xs font-semibold tracking-wider text-gray-500 uppercase">
                   Token
                 </p>
@@ -696,6 +975,7 @@ function FarmerDashboardPage() {
                 <p className="mt-1 font-black text-gray-900">
                   {upcomingBooking?.booking_code ?? 'N/A'}
                 </p>
+
               </div>
 
             </div>
@@ -796,6 +1076,7 @@ function FarmerDashboardPage() {
             <table className="min-w-full text-left">
 
               <thead className="bg-gray-50">
+
                 <tr>
 
                   <th className="px-6 py-4 text-xs font-bold tracking-wider text-gray-500 uppercase">
@@ -823,18 +1104,21 @@ function FarmerDashboardPage() {
                   </th>
 
                 </tr>
+
               </thead>
 
               <tbody className="divide-y divide-gray-100">
 
                 {loadingBookings ? (
                   <tr>
+
                     <td
                       colSpan={6}
                       className="px-6 py-8 text-sm text-center text-gray-500"
                     >
                       Loading your bookings...
                     </td>
+
                   </tr>
                 ) : bookings.length > 0 ? (
                   bookings.slice(0, 5).map((booking) => (
@@ -886,12 +1170,14 @@ function FarmerDashboardPage() {
                   ))
                 ) : (
                   <tr>
+
                     <td
                       colSpan={6}
                       className="px-6 py-8 text-sm text-center text-gray-500"
                     >
                       No bookings found.
                     </td>
+
                   </tr>
                 )}
 
@@ -911,9 +1197,11 @@ function FarmerDashboardPage() {
       <section className="bg-white border-t border-gray-200">
 
         <div className="px-4 py-5 mx-auto text-center max-w-7xl sm:px-6 lg:px-8">
+
           <p className="text-xs text-gray-500">
             Kisaan Mitra · Digital Mandi Management Platform · Farmer Services
           </p>
+
         </div>
 
       </section>

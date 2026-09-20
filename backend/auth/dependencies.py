@@ -47,4 +47,5 @@ def get_current_user(
     return {
         "user_id": user.id,
         "role": user.role,
+        "mandi_id": user.mandi_id,
     }

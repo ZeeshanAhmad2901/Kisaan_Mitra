@@ -1,67 +1,59 @@
-import type { MandiOwner } from '../types'
+import apiClient from './client'
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
-const MOCK_OWNERS: MandiOwner[] = [
-  {
-    id: 'mo1',
-    name: 'R.K. Gupta',
-    email: 'rk.gupta@example.com',
-    phone: '9876543210',
-    role: 'mandiOwner' as const,
-    createdAt: '2025-01-10T10:00:00Z',
-    mandiName: 'Azadpur Mandi',
-    mandiLocation: 'Delhi',
-    licenseNumber: 'DL-2025-M001',
-  },
-  {
-    id: 'mo2',
-    name: 'A.K. Verma',
-    email: 'ak.verma@example.com',
-    phone: '9876543211',
-    role: 'mandiOwner' as const,
-    createdAt: '2025-02-15T10:00:00Z',
-    mandiName: 'Krishna Mandi',
-    mandiLocation: 'Lucknow',
-    licenseNumber: 'UP-2025-M002',
-  },
-  {
-    id: 'mo3',
-    name: 'S.S. Sharma',
-    email: 'ss.sharma@example.com',
-    phone: '9876543212',
-    role: 'mandiOwner' as const,
-    createdAt: '2025-03-20T10:00:00Z',
-    mandiName: 'Jawaharlal Nehru Mandi',
-    mandiLocation: 'Jaipur',
-    licenseNumber: 'RJ-2025-M003',
-  },
-  {
-    id: 'mo4',
-    name: 'P.K. Tiwari',
-    email: 'pk.tiwari@example.com',
-    phone: '9876543213',
-    role: 'mandiOwner' as const,
-    createdAt: '2025-08-25T10:00:00Z',
-    mandiName: 'Tiwari Mandi',
-    mandiLocation: 'Bhopal',
-    licenseNumber: 'MP-2025-M004',
-  },
-]
-
-export async function getOwners(): Promise<MandiOwner[]> {
-  await delay(600)
-  return MOCK_OWNERS
+export interface OwnerUser {
+  id: number
+  name: string
+  phone: string
+  email: string | null
+  role: string
+  mandi_id: number | null
+  is_active: boolean
 }
 
-export async function approveOwner(_id: string): Promise<void> {
-  await delay(500)
+interface UserListResponse {
+  items: OwnerUser[]
+  total: number
+  page: number
+  page_size: number
+  pages: number
 }
 
-export async function rejectOwner(_id: string, _reason: string): Promise<void> {
-  await delay(500)
+export interface UpdateOwnerData {
+  name?: string
+  phone?: string
+  email?: string | null
+  role?: string
+  mandi_id?: number | null
+  is_active?: boolean
 }
 
-export async function suspendOwner(_id: string): Promise<void> {
-  await delay(400)
+export async function getOwners(): Promise<OwnerUser[]> {
+  const response = await apiClient<UserListResponse>(
+    '/users/?page=1&page_size=100',
+  )
+
+  return response.items.filter(
+    (user) => user.role === 'mandiOwner',
+  )
+}
+
+export async function updateOwner(
+  id: number,
+  data: UpdateOwnerData,
+): Promise<OwnerUser> {
+  return apiClient<OwnerUser>(`/users/${id}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  })
+}
+
+export async function deactivateOwner(
+  id: number,
+): Promise<void> {
+  await apiClient(`/users/${id}`, {
+    method: 'DELETE',
+  })
 }

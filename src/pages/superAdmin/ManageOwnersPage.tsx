@@ -1,91 +1,380 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { getMandis, type BackendMandi } from '../../api/mandiApi'
+import {
+  deactivateOwner,
+  getOwners,
+  type OwnerUser,
+} from '../../api/ownerManagementApi'
 
-const MOCK_OWNERS = [
-  { id: '1', name: 'R.K. Gupta', email: 'rk.gupta@example.com', phone: '9876543210', mandi: 'Azadpur Mandi', state: 'Delhi', status: 'approved', joinedOn: '2025-01-10' },
-  { id: '2', name: 'A.K. Verma', email: 'ak.verma@example.com', phone: '9876543211', mandi: 'Krishna Mandi', state: 'Uttar Pradesh', status: 'approved', joinedOn: '2025-02-15' },
-  { id: '3', name: 'S.S. Sharma', email: 'ss.sharma@example.com', phone: '9876543212', mandi: 'Jawaharlal Nehru Mandi', state: 'Rajasthan', status: 'approved', joinedOn: '2025-03-20' },
-  { id: '4', name: 'P.K. Tiwari', email: 'pk.tiwari@example.com', phone: '9876543213', mandi: 'Tiwari Mandi', state: 'Madhya Pradesh', status: 'pending', joinedOn: '2025-08-25' },
-  { id: '5', name: 'G.S. Singh', email: 'gs.singh@example.com', phone: '9876543214', mandi: 'Singh Mandi', state: 'Punjab', status: 'rejected', joinedOn: '2025-08-20' },
-]
+type FilterType = 'all' | 'active' | 'inactive'
 
 function ManageOwnersPage() {
-  const [filter, setFilter] = useState<'all' | 'approved' | 'pending' | 'rejected'>('all')
+  const [owners, setOwners] = useState<OwnerUser[]>([])
+  const [mandis, setMandis] = useState<BackendMandi[]>([])
+  const [filter, setFilter] = useState<FilterType>('all')
+  const [search, setSearch] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [actionId, setActionId] = useState<number | null>(null)
 
-  const filtered = filter === 'all' ? MOCK_OWNERS : MOCK_OWNERS.filter((o) => o.status === filter)
+  const loadOwners = async () => {
+    try {
+      setLoading(true)
+      setError('')
 
-  const STATUS_BADGE: Record<string, string> = {
-    approved: 'bg-green-50 text-green-700',
-    pending: 'bg-yellow-50 text-yellow-700',
-    rejected: 'bg-red-50 text-red-700',
+      const [ownerData, mandiData] = await Promise.all([
+        getOwners(),
+        getMandis(),
+      ])
+
+      setOwners(ownerData)
+      setMandis(mandiData)
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to load mandi owners',
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadOwners()
+  }, [])
+
+  const mandiMap = useMemo(
+    () =>
+      new Map(
+        mandis.map((mandi) => [mandi.id, mandi]),
+      ),
+    [mandis],
+  )
+
+  const filteredOwners = useMemo(() => {
+    const query = search.trim().toLowerCase()
+
+    return owners.filter((owner) => {
+      const matchesFilter =
+        filter === 'all' ||
+        (filter === 'active' && owner.is_active) ||
+        (filter === 'inactive' && !owner.is_active)
+
+      if (!query) {
+        return matchesFilter
+      }
+
+      const mandi = owner.mandi_id
+        ? mandiMap.get(owner.mandi_id)
+        : undefined
+
+      const matchesSearch =
+        owner.name.toLowerCase().includes(query) ||
+        owner.phone.toLowerCase().includes(query) ||
+        (owner.email ?? '').toLowerCase().includes(query) ||
+        String(owner.id).includes(query) ||
+        (mandi?.name ?? '').toLowerCase().includes(query) ||
+        (mandi?.location ?? '').toLowerCase().includes(query)
+
+      return matchesFilter && matchesSearch
+    })
+  }, [owners, search, filter, mandiMap])
+
+  const activeCount = owners.filter(
+    (owner) => owner.is_active,
+  ).length
+
+  const inactiveCount = owners.filter(
+    (owner) => !owner.is_active,
+  ).length
+
+  const handleDeactivate = async (owner: OwnerUser) => {
+    const confirmed = window.confirm(
+      `Deactivate ${owner.name}? This will disable their account.`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      setActionId(owner.id)
+      setError('')
+
+      await deactivateOwner(owner.id)
+
+      setOwners((current) =>
+        current.map((item) =>
+          item.id === owner.id
+            ? { ...item, is_active: false }
+            : item,
+        ),
+      )
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to deactivate owner',
+      )
+    } finally {
+      setActionId(null)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="px-4 py-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="p-10 text-center bg-white border border-gray-200 rounded-xl">
+            <div className="w-10 h-10 mx-auto border-4 border-gray-200 rounded-full border-t-green-600 animate-spin" />
+
+            <p className="mt-4 text-sm text-gray-500">
+              Loading owner records...
+            </p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div className="px-4 py-8">
-      <div className="max-w-6xl mx-auto">
-        <h1 className="text-2xl font-bold text-gray-900">Manage Mandi Owners</h1>
-        <p className="mt-1 text-gray-500">{MOCK_OWNERS.length} owners registered</p>
+      <div className="mx-auto max-w-7xl">
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Manage Mandi Owners
+            </h1>
 
-        {/* Filter Tabs */}
-        <div className="flex gap-2 pb-1 mt-6 border-b border-gray-200">
-          {(['all', 'approved', 'pending', 'rejected'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors capitalize ${filter === f ? 'bg-green-700 text-white' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'}`}
-            >
-              {f} {f !== 'all' && `(${MOCK_OWNERS.filter((o) => o.status === f).length})`}
-            </button>
-          ))}
+            <p className="mt-1 text-gray-500">
+              Real mandi owner accounts from the platform database
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void loadOwners()}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Refresh
+          </button>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div className="p-4 mt-6 border border-red-200 rounded-xl bg-red-50">
+            <p className="text-sm font-medium text-red-800">
+              {error}
+            </p>
+          </div>
+        )}
+
+        {/* Summary */}
+        <div className="grid grid-cols-1 gap-4 mt-6 sm:grid-cols-3">
+          <div className="p-5 bg-white border border-gray-200 rounded-xl">
+            <p className="text-sm text-gray-500">
+              Total Owners
+            </p>
+
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {owners.length.toLocaleString('en-IN')}
+            </p>
+          </div>
+
+          <div className="p-5 border border-green-200 rounded-xl bg-green-50">
+            <p className="text-sm text-green-700">
+              Active Owners
+            </p>
+
+            <p className="mt-1 text-2xl font-bold text-green-900">
+              {activeCount.toLocaleString('en-IN')}
+            </p>
+          </div>
+
+          <div className="p-5 border border-red-200 rounded-xl bg-red-50">
+            <p className="text-sm text-red-700">
+              Inactive Owners
+            </p>
+
+            <p className="mt-1 text-2xl font-bold text-red-900">
+              {inactiveCount.toLocaleString('en-IN')}
+            </p>
+          </div>
+        </div>
+
+        {/* Search + Filters */}
+        <div className="flex flex-col gap-3 mt-8 sm:flex-row">
+          <input
+            type="text"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by name, phone, email or mandi..."
+            className="flex-1 px-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          />
+
+          <div className="flex gap-2">
+            {(['all', 'active', 'inactive'] as FilterType[]).map(
+              (item) => (
+                <button
+                  key={item}
+                  type="button"
+                  onClick={() => setFilter(item)}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg capitalize transition-colors ${
+                    filter === item
+                      ? 'bg-green-700 text-white'
+                      : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {item}
+                </button>
+              ),
+            )}
+          </div>
         </div>
 
         {/* Owners Table */}
-        <div className="mt-4 overflow-hidden bg-white border border-gray-200 rounded-lg">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-4 py-3 font-medium text-left text-gray-700">Name</th>
-                  <th className="px-4 py-3 font-medium text-left text-gray-700">Mandi</th>
-                  <th className="px-4 py-3 font-medium text-left text-gray-700">State</th>
-                  <th className="px-4 py-3 font-medium text-left text-gray-700">Contact</th>
-                  <th className="px-4 py-3 font-medium text-left text-gray-700">Joined</th>
-                  <th className="px-4 py-3 font-medium text-left text-gray-700">Status</th>
-                  <th className="px-4 py-3 font-medium text-right text-gray-700">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.map((o) => (
-                  <tr key={o.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-gray-900">{o.name}</p>
-                      <p className="text-xs text-gray-500">{o.email}</p>
-                    </td>
-                    <td className="px-4 py-3 text-gray-600">🏪 {o.mandi}</td>
-                    <td className="px-4 py-3 text-gray-600">{o.state}</td>
-                    <td className="px-4 py-3 text-xs text-gray-500">{o.phone}</td>
-                    <td className="px-4 py-3 text-gray-600">{o.joinedOn}</td>
-                    <td className="px-4 py-3">
-                      <span className={`text-xs font-medium px-2 py-0.5 rounded-full capitalize ${STATUS_BADGE[o.status]}`}>
-                        {o.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 space-x-1 text-right">
-                      {o.status === 'pending' && (
-                        <>
-                          <button className="text-xs font-medium text-green-600 hover:text-green-800">Approve</button>
-                          <button className="ml-1 text-xs font-medium text-red-500 hover:text-red-700">Reject</button>
-                        </>
-                      )}
-                      <button className="ml-1 text-xs font-medium text-blue-600 hover:text-blue-800">View</button>
-                    </td>
+        <div className="mt-4 overflow-hidden bg-white border border-gray-200 rounded-xl">
+          {filteredOwners.length === 0 ? (
+            <div className="p-10 text-center">
+              <div className="text-4xl">👤</div>
+
+              <h3 className="mt-3 font-semibold text-gray-900">
+                No owners found
+              </h3>
+
+              <p className="mt-1 text-sm text-gray-500">
+                Try changing your search or filter.
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-5 py-3 font-medium text-left text-gray-700">
+                      Owner
+                    </th>
+
+                    <th className="px-5 py-3 font-medium text-left text-gray-700">
+                      Mandi
+                    </th>
+
+                    <th className="px-5 py-3 font-medium text-left text-gray-700">
+                      Contact
+                    </th>
+
+                    <th className="px-5 py-3 font-medium text-right text-gray-700">
+                      Owner ID
+                    </th>
+
+                    <th className="px-5 py-3 font-medium text-left text-gray-700">
+                      Status
+                    </th>
+
+                    <th className="px-5 py-3 font-medium text-right text-gray-700">
+                      Action
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          {filtered.length === 0 && (
-            <div className="p-8 text-center text-gray-500">No owners found for this filter.</div>
+                </thead>
+
+                <tbody className="divide-y divide-gray-100">
+                  {filteredOwners.map((owner) => {
+                    const mandi = owner.mandi_id
+                      ? mandiMap.get(owner.mandi_id)
+                      : undefined
+
+                    return (
+                      <tr
+                        key={owner.id}
+                        className="transition-colors hover:bg-gray-50"
+                      >
+                        <td className="px-5 py-4">
+                          <p className="font-semibold text-gray-900">
+                            {owner.name}
+                          </p>
+
+                          <p className="text-xs text-gray-500">
+                            {owner.email || 'No email'}
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4">
+                          {mandi ? (
+                            <>
+                              <p className="font-medium text-gray-900">
+                                🏪 {mandi.name}
+                              </p>
+
+                              <p className="text-xs text-gray-500">
+                                {mandi.location}
+                              </p>
+                            </>
+                          ) : (
+                            <span className="text-gray-400">
+                              No mandi assigned
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <p className="text-gray-700">
+                            {owner.phone}
+                          </p>
+                        </td>
+
+                        <td className="px-5 py-4 font-medium text-right text-gray-700">
+                          {owner.id}
+                        </td>
+
+                        <td className="px-5 py-4">
+                          <span
+                            className={`inline-flex px-2.5 py-1 text-xs font-medium rounded-full ${
+                              owner.is_active
+                                ? 'bg-green-50 text-green-700'
+                                : 'bg-red-50 text-red-700'
+                            }`}
+                          >
+                            {owner.is_active
+                              ? 'Active'
+                              : 'Inactive'}
+                          </span>
+                        </td>
+
+                        <td className="px-5 py-4 text-right">
+                          {owner.is_active ? (
+                            <button
+                              type="button"
+                              disabled={actionId === owner.id}
+                              onClick={() =>
+                                void handleDeactivate(owner)
+                              }
+                              className="text-xs font-medium text-red-600 hover:text-red-800 disabled:opacity-50"
+                            >
+                              {actionId === owner.id
+                                ? 'Processing...'
+                                : 'Deactivate'}
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-400">
+                              Deactivated
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
+
+          <div className="px-5 py-3 text-xs text-gray-500 border-t border-gray-100 bg-gray-50">
+            Showing{' '}
+            {filteredOwners.length.toLocaleString('en-IN')} of{' '}
+            {owners.length.toLocaleString('en-IN')} owners
+          </div>
         </div>
       </div>
     </div>

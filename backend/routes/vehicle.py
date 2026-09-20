@@ -3,7 +3,8 @@ from math import ceil
 from auth.dependencies import get_current_user
 from auth.roles import require_role
 from crud.vehicle import (create_vehicle, deactivate_vehicle, get_all_vehicles,
-                          get_vehicle_by_id, update_vehicle)
+                          get_farmer_vehicles, get_vehicle_by_id,
+                          update_vehicle)
 from database.connection import engine
 from fastapi import APIRouter, Depends, HTTPException
 from models.vehicle import Vehicle
@@ -59,6 +60,22 @@ def list_my_vehicles(
     )
 
     return vehicles
+
+
+@router.get(
+    "/farmer/{farmer_id}",
+    response_model=list[VehicleResponse],
+)
+def list_farmer_vehicles(
+    farmer_id: int,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(
+        require_role("mandiOwner", "mandiOperator", "superAdmin")
+    ),
+):
+    vehicles = get_farmer_vehicles(db, farmer_id)
+    return vehicles
+
 
 @router.get("/", response_model=VehicleListResponse)
 def list_vehicles(

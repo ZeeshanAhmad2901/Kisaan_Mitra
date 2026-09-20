@@ -81,3 +81,22 @@ class Booking(Base):
         onupdate=datetime.utcnow,
         nullable=False,
     )
+
+    arrival_status: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+        server_default=text("'pending'"),
+        index=True,
+    )
+
+    arrival_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    arrival_verified_by: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
+    )

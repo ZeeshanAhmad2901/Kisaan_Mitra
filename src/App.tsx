@@ -14,11 +14,17 @@ import BookingSuccessPage from './pages/farmer/BookingSuccessPage'
 import FarmerDashboardPage from './pages/farmer/FarmerDashboardPage'
 import MyBookingsPage from './pages/farmer/MyBookingsPage'
 import MyVehiclesPage from './pages/farmer/MyVehiclesPage'
+import AssistedBookingPage from './pages/mandiOperator/AssistedBookingPage'
+import MandiOperatorDashboardPage from './pages/mandiOperator/MandiOperatorDashboardPage'
+import ProcurementPage from './pages/mandiOperator/ProcurementPage'
+import QRVerificationPage from './pages/mandiOperator/QRVerificationPage'
+import MandiOperatorQueueManagementPage from './pages/mandiOperator/QueueManagementPage'
 import BookingsPage from './pages/mandiOwner/BookingsPage'
 import MandiOwnerDashboardPage from './pages/mandiOwner/MandiOwnerDashboardPage'
-import SlotManagementPage from './pages/mandiOwner/SlotManagementPage'
 import QueueManagementPage from './pages/mandiOwner/QueueManagementPage'
 import ReportsPage from './pages/mandiOwner/ReportsPage'
+import SlotManagementPage from './pages/mandiOwner/SlotManagementPage'
+import AuditLogsPage from './pages/superAdmin/AuditLogsPage'
 import ManageMandisPage from './pages/superAdmin/ManageMandisPage'
 import ManageOwnersPage from './pages/superAdmin/ManageOwnersPage'
 import PlatformAnalyticsPage from './pages/superAdmin/PlatformAnalyticsPage'
@@ -47,12 +53,50 @@ function App() {
           <Route path="/mandi-owner/queue" element={<Layout isHomePage={false}><QueueManagementPage /></Layout>} />
           <Route path="/mandi-owner/bookings" element={<Layout isHomePage={false}><BookingsPage /></Layout>} />
           <Route path="/mandi-owner/reports" element={<Layout isHomePage={false}><ReportsPage /></Layout>} />
+
+          <Route
+  path="/mandi-operator/assisted-booking"
+  element={
+    <Layout isHomePage={false}>
+      <AssistedBookingPage />
+    </Layout>
+  }
+/>
+<Route
+  path="/mandi-operator/dashboard"
+  element={
+    <Layout isHomePage={false}>
+      <MandiOperatorDashboardPage />
+    </Layout>
+  }
+/>
+<Route
+  path="/mandi-operator/queue-management"
+  element={
+    <Layout isHomePage={false}>
+      <MandiOperatorQueueManagementPage />
+    </Layout>
+  }
+/>
+<Route
+  path="/mandi-operator/qr-verification"
+  element={<QRVerificationPage />}
+/>
+<Route
+  path="/mandi-operator/procurement"
+  element={<ProcurementPage />}
+/>
+<Route
+  path="/super-admin/audit-logs"
+  element={<AuditLogsPage />}
+/>
           <Route path="/super-admin/dashboard" element={<Layout isHomePage={false}><SuperAdminDashboardPage /></Layout>} />
           <Route path="/super-admin/mandis" element={<Layout isHomePage={false}><ManageMandisPage /></Layout>} />
           <Route path="/super-admin/owners" element={<Layout isHomePage={false}><ManageOwnersPage /></Layout>} />
           <Route path="/super-admin/analytics" element={<Layout isHomePage={false}><PlatformAnalyticsPage /></Layout>} />
           <Route path="/super-admin/settings" element={<Layout isHomePage={false}><SystemSettingsPage /></Layout>} />
           <Route path="*" element={<Layout isHomePage={false}><NotFoundPage /></Layout>} />
+
           <Route
   path="/privacy-policy"
   element={<PrivacyPolicyPage />}

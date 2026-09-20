@@ -1,16 +1,17 @@
-from sqlalchemy.orm import Session
-
 from models.booking import Booking
 from models.mandi import Mandi
 from models.procurement import Procurement
 from models.user import User
 from schemas.procurement import ProcurementCreate, ProcurementUpdate
+from sqlalchemy.orm import Session
 
 
-def _get_owner_booking(
+def _get_authorized_booking(
     db: Session,
     booking_id: int,
-    owner_id: int,
+    user_id: int,
+    user_role: str,
+    mandi_id: int | None = None,
 ) -> Booking:
     booking = (
         db.query(Booking)
@@ -25,14 +26,30 @@ def _get_owner_booking(
         db.query(Mandi)
         .filter(
             Mandi.id == booking.mandi_id,
-            Mandi.owner_id == owner_id,
             Mandi.is_active.is_(True),
         )
         .first()
     )
 
     if mandi is None:
-        raise ValueError("Booking does not belong to this mandi owner")
+        raise ValueError("Booking does not belong to an active mandi")
+
+    if user_role == "mandiOwner":
+        if mandi.owner_id != user_id:
+            raise ValueError(
+                "Booking does not belong to this mandi owner"
+            )
+
+    elif user_role == "mandiOperator":
+        if mandi_id != booking.mandi_id:
+            raise ValueError(
+                "Operator is not assigned to this mandi"
+            )
+
+    else:
+        raise ValueError(
+            "User is not authorized to manage procurement"
+        )
 
     return booking
 
@@ -40,12 +57,16 @@ def _get_owner_booking(
 def create_procurement(
     db: Session,
     procurement_data: ProcurementCreate,
-    owner_id: int,
+    user_id: int,
+    user_role: str,
+    mandi_id: int | None = None,
 ) -> Procurement:
-    booking = _get_owner_booking(
+    booking = _get_authorized_booking(
         db,
         procurement_data.booking_id,
-        owner_id,
+        user_id,
+        user_role,
+        mandi_id,
     )
 
     if booking.status not in {"in_progress", "completed"}:
@@ -67,6 +88,7 @@ def create_procurement(
         .filter(
             User.id == booking.farmer_id,
             User.role == "farmer",
+            User.is_active.is_(True),
         )
         .first()
     )
@@ -155,7 +177,9 @@ def update_procurement(
     db: Session,
     procurement_id: int,
     procurement_data: ProcurementUpdate,
-    owner_id: int,
+    user_id: int,
+    user_role: str,
+    mandi_id: int | None = None,
 ) -> Procurement | None:
     procurement = (
         db.query(Procurement)
@@ -170,7 +194,6 @@ def update_procurement(
         db.query(Mandi)
         .filter(
             Mandi.id == procurement.mandi_id,
-            Mandi.owner_id == owner_id,
             Mandi.is_active.is_(True),
         )
         .first()
@@ -178,7 +201,24 @@ def update_procurement(
 
     if mandi is None:
         raise ValueError(
-            "Procurement does not belong to this mandi owner"
+            "Procurement does not belong to an active mandi"
+        )
+
+    if user_role == "mandiOwner":
+        if mandi.owner_id != user_id:
+            raise ValueError(
+                "Procurement does not belong to this mandi owner"
+            )
+
+    elif user_role == "mandiOperator":
+        if mandi_id != procurement.mandi_id:
+            raise ValueError(
+                "Operator is not assigned to this mandi"
+            )
+
+    else:
+        raise ValueError(
+            "User is not authorized to update procurement"
         )
 
     update_data = procurement_data.model_dump(

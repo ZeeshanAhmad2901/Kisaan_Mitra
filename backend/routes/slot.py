@@ -7,7 +7,6 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from schemas.slot import SlotCreate, SlotResponse
 from sqlalchemy.orm import Session
 
-
 router = APIRouter(
     prefix="/slots",
     tags=["Slots"],
@@ -48,7 +47,9 @@ def list_slots(
     mandi_id: int | None = None,
     slot_date: date | None = None,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(require_role("farmer", "mandiOwner", "superAdmin")),
+    current_user: dict = Depends(
+        require_role("farmer", "mandiOwner", "mandiOperator", "superAdmin")
+    ),
 ):
     slots = get_slots(
         db,
@@ -67,7 +68,7 @@ def get_slot(
     slot_id: int,
     db: Session = Depends(get_db),
     current_user: dict = Depends(
-        require_role("farmer", "mandiOwner", "superAdmin")
+        require_role("farmer", "mandiOwner", "mandiOperator", "superAdmin")
     ),
 ):
     slot = get_slot_by_id(db, slot_id)

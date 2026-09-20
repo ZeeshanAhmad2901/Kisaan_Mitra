@@ -42,7 +42,9 @@ def create_booking(
     )
 
     if slot is None:
-        raise ValueError("Slot not found, inactive, or does not belong to this mandi")
+        raise ValueError(
+            "Slot not found, inactive, or does not belong to this mandi"
+        )
 
     if slot.booked_slots >= slot.total_slots:
         raise ValueError("Selected slot is already full")
@@ -58,7 +60,22 @@ def create_booking(
     )
 
     if vehicle is None:
-        raise ValueError("Vehicle not found or does not belong to this farmer")
+        raise ValueError(
+            "Vehicle not found or does not belong to this farmer"
+        )
+
+    farmer = (
+        db.query(User)
+        .filter(
+            User.id == farmer_id,
+            User.role == "farmer",
+            User.is_active.is_(True),
+        )
+        .first()
+    )
+
+    if farmer is None:
+        raise ValueError("Farmer not found or inactive")
 
     booking = Booking(
         booking_code=_generate_booking_code(),
@@ -82,7 +99,7 @@ def create_booking(
         "id": booking.id,
         "booking_code": booking.booking_code,
         "farmer_id": booking.farmer_id,
-        "farmer_name": db.query(User).filter(User.id == farmer_id).first().name,
+        "farmer_name": farmer.name,
         "mandi_id": booking.mandi_id,
         "slot_id": booking.slot_id,
         "slot_date": slot.slot_date,
@@ -95,14 +112,18 @@ def create_booking(
         "quantity": booking.quantity,
         "booking_source": booking.booking_source,
         "status": booking.status,
+        "arrival_status": booking.arrival_status,
+        "arrival_verified_at": booking.arrival_verified_at,
+        "arrival_verified_by": booking.arrival_verified_by,
         "created_at": booking.created_at,
         "updated_at": booking.updated_at,
-}
+    }
+
 
 def create_assisted_booking(
     db: Session,
     booking_data,
-) -> Booking:
+) -> dict:
     farmer = (
         db.query(User)
         .filter(
@@ -197,9 +218,13 @@ def create_assisted_booking(
         "quantity": booking.quantity,
         "booking_source": booking.booking_source,
         "status": booking.status,
+        "arrival_status": booking.arrival_status,
+        "arrival_verified_at": booking.arrival_verified_at,
+        "arrival_verified_by": booking.arrival_verified_by,
         "created_at": booking.created_at,
         "updated_at": booking.updated_at,
     }
+
 
 def get_booking(
     db: Session,
@@ -219,6 +244,7 @@ def get_farmer_bookings(
     rows = (
         db.query(
             Booking,
+            User.name.label("farmer_name"),
             Mandi.name.label("mandi_name"),
             Slot.slot_date,
             Slot.start_time,
@@ -226,11 +252,15 @@ def get_farmer_bookings(
             Vehicle.vehicle_number,
             Vehicle.vehicle_type,
         )
+        .join(User, Booking.farmer_id == User.id)
         .join(Mandi, Booking.mandi_id == Mandi.id)
         .join(Slot, Booking.slot_id == Slot.id)
         .join(Vehicle, Booking.vehicle_id == Vehicle.id)
         .filter(Booking.farmer_id == farmer_id)
-        .order_by(Booking.created_at.desc(), Booking.id.desc())
+        .order_by(
+            Booking.created_at.desc(),
+            Booking.id.desc(),
+        )
         .all()
     )
 
@@ -241,6 +271,7 @@ def get_farmer_bookings(
             "farmer_id": booking.farmer_id,
             "farmer_name": farmer_name,
             "mandi_id": booking.mandi_id,
+            "mandi_name": mandi_name,
             "slot_id": booking.slot_id,
             "slot_date": slot_date,
             "start_time": start_time,
@@ -252,12 +283,16 @@ def get_farmer_bookings(
             "quantity": booking.quantity,
             "booking_source": booking.booking_source,
             "status": booking.status,
+            "arrival_status": booking.arrival_status,
+            "arrival_verified_at": booking.arrival_verified_at,
+            "arrival_verified_by": booking.arrival_verified_by,
             "created_at": booking.created_at,
             "updated_at": booking.updated_at,
         }
         for (
             booking,
             farmer_name,
+            mandi_name,
             slot_date,
             start_time,
             end_time,
@@ -265,6 +300,7 @@ def get_farmer_bookings(
             vehicle_type,
         ) in rows
     ]
+
 
 def get_mandi_bookings(
     db: Session,
@@ -275,6 +311,7 @@ def get_mandi_bookings(
         db.query(
             Booking,
             User.name.label("farmer_name"),
+            Mandi.name.label("mandi_name"),
             Slot.slot_date,
             Slot.start_time,
             Slot.end_time,
@@ -282,6 +319,7 @@ def get_mandi_bookings(
             Vehicle.vehicle_type,
         )
         .join(User, Booking.farmer_id == User.id)
+        .join(Mandi, Booking.mandi_id == Mandi.id)
         .join(Slot, Booking.slot_id == Slot.id)
         .join(Vehicle, Booking.vehicle_id == Vehicle.id)
         .filter(Booking.mandi_id == mandi_id)
@@ -292,7 +330,10 @@ def get_mandi_bookings(
 
     rows = (
         query
-        .order_by(Booking.created_at.asc(), Booking.id.asc())
+        .order_by(
+            Booking.created_at.asc(),
+            Booking.id.asc(),
+        )
         .all()
     )
 
@@ -303,6 +344,7 @@ def get_mandi_bookings(
             "farmer_id": booking.farmer_id,
             "farmer_name": farmer_name,
             "mandi_id": booking.mandi_id,
+            "mandi_name": mandi_name,
             "slot_id": booking.slot_id,
             "slot_date": slot_date,
             "start_time": start_time,
@@ -314,12 +356,16 @@ def get_mandi_bookings(
             "quantity": booking.quantity,
             "booking_source": booking.booking_source,
             "status": booking.status,
+            "arrival_status": booking.arrival_status,
+            "arrival_verified_at": booking.arrival_verified_at,
+            "arrival_verified_by": booking.arrival_verified_by,
             "created_at": booking.created_at,
             "updated_at": booking.updated_at,
         }
         for (
             booking,
             farmer_name,
+            mandi_name,
             slot_date,
             start_time,
             end_time,
@@ -332,7 +378,9 @@ def get_mandi_bookings(
 def start_processing(
     db: Session,
     booking_id: int,
-    owner_id: int,
+    user_id: int,
+    user_role: str,
+    mandi_id: int | None = None,
 ) -> Booking | None:
     booking = (
         db.query(Booking)
@@ -346,18 +394,41 @@ def start_processing(
     if booking is None:
         return None
 
+    if booking.arrival_status != "verified":
+        raise ValueError(
+            "Farmer arrival must be confirmed before processing"
+        )
+
     mandi = (
         db.query(Mandi)
         .filter(
             Mandi.id == booking.mandi_id,
-            Mandi.owner_id == owner_id,
             Mandi.is_active.is_(True),
         )
         .first()
     )
 
     if mandi is None:
-        raise ValueError("Booking does not belong to this mandi owner")
+        raise ValueError(
+            "Booking does not belong to an active mandi"
+        )
+
+    if user_role == "mandiOwner":
+        if mandi.owner_id != user_id:
+            raise ValueError(
+                "Booking does not belong to this mandi owner"
+            )
+
+    elif user_role == "mandiOperator":
+        if mandi_id != booking.mandi_id:
+            raise ValueError(
+                "Operator is not assigned to this mandi"
+            )
+
+    else:
+        raise ValueError(
+            "User is not authorized to process bookings"
+        )
 
     active_booking = (
         db.query(Booking)
@@ -370,7 +441,9 @@ def start_processing(
     )
 
     if active_booking is not None:
-        raise ValueError("Another farmer is already being processed for this slot")
+        raise ValueError(
+            "Another farmer is already being processed for this slot"
+        )
 
     first_confirmed = (
         db.query(Booking)
@@ -379,23 +452,44 @@ def start_processing(
             Booking.slot_id == booking.slot_id,
             Booking.status == "confirmed",
         )
-        .order_by(Booking.created_at.asc(), Booking.id.asc())
+        .order_by(
+            Booking.created_at.asc(),
+            Booking.id.asc(),
+        )
         .first()
     )
 
     if first_confirmed is None or first_confirmed.id != booking.id:
-        raise ValueError("Only the first farmer in the queue can be started")
+        raise ValueError(
+            "Only the first farmer in the queue can be started"
+        )
 
     booking.status = "in_progress"
 
     db.commit()
     db.refresh(booking)
 
-    return booking
+    updated_bookings = get_mandi_bookings(
+        db,
+        booking.mandi_id,
+    )
+
+    return next(
+        (
+            item
+            for item in updated_bookings
+            if item["id"] == booking.id
+        ),
+        None,
+    )
+
+
 def complete_booking(
     db: Session,
     booking_id: int,
-    owner_id: int,
+    user_id: int,
+    user_role: str,
+    mandi_id: int | None = None,
 ) -> Booking | None:
     booking = (
         db.query(Booking)
@@ -413,14 +507,32 @@ def complete_booking(
         db.query(Mandi)
         .filter(
             Mandi.id == booking.mandi_id,
-            Mandi.owner_id == owner_id,
             Mandi.is_active.is_(True),
         )
         .first()
     )
 
     if mandi is None:
-        raise ValueError("Booking does not belong to this mandi owner")
+        raise ValueError(
+            "Booking does not belong to an active mandi"
+        )
+
+    if user_role == "mandiOwner":
+        if mandi.owner_id != user_id:
+            raise ValueError(
+                "Booking does not belong to this mandi owner"
+            )
+
+    elif user_role == "mandiOperator":
+        if mandi_id != booking.mandi_id:
+            raise ValueError(
+                "Operator is not assigned to this mandi"
+            )
+
+    else:
+        raise ValueError(
+            "User is not authorized to process bookings"
+        )
 
     booking.status = "completed"
 
@@ -431,7 +543,10 @@ def complete_booking(
             Booking.slot_id == booking.slot_id,
             Booking.status == "confirmed",
         )
-        .order_by(Booking.created_at.asc(), Booking.id.asc())
+        .order_by(
+            Booking.created_at.asc(),
+            Booking.id.asc(),
+        )
         .first()
     )
 
@@ -441,5 +556,84 @@ def complete_booking(
     db.commit()
     db.refresh(booking)
 
-    return booking
+    updated_bookings = get_mandi_bookings(
+        db,
+        booking.mandi_id,
+    )
 
+    return next(
+        (
+            item
+            for item in updated_bookings
+            if item["id"] == booking.id
+        ),
+        None,
+    )
+
+
+def confirm_arrival(
+    db: Session,
+    booking_id: int,
+    user_id: int,
+    user_role: str,
+    mandi_id: int | None = None,
+) -> Booking | None:
+    booking = (
+        db.query(Booking)
+        .filter(Booking.id == booking_id)
+        .first()
+    )
+
+    if booking is None:
+        return None
+
+    mandi = (
+        db.query(Mandi)
+        .filter(
+            Mandi.id == booking.mandi_id,
+            Mandi.is_active.is_(True),
+        )
+        .first()
+    )
+
+    if mandi is None:
+        raise ValueError(
+            "Booking does not belong to an active mandi"
+        )
+
+    if user_role == "mandiOwner":
+        if mandi.owner_id != user_id:
+            raise ValueError(
+                "Booking does not belong to this mandi owner"
+            )
+
+    elif user_role == "mandiOperator":
+        if mandi_id != booking.mandi_id:
+            raise ValueError(
+                "Operator is not assigned to this mandi"
+            )
+
+    elif user_role == "superAdmin":
+        pass
+
+    else:
+        raise ValueError(
+            "User is not authorized to confirm farmer arrival"
+        )
+
+    if booking.status == "completed":
+        raise ValueError(
+            "This booking has already been completed"
+        )
+
+    if booking.arrival_status == "verified":
+        return booking
+
+    booking.arrival_status = "verified"
+    booking.arrival_verified_at = datetime.utcnow()
+    booking.arrival_verified_by = user_id
+
+    db.commit()
+    db.refresh(booking)
+
+    return booking

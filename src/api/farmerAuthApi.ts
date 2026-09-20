@@ -54,6 +54,7 @@ export async function farmerLogin(
     phone: string
     email: string | null
     role: string
+    mandi_id: number | null
     is_active: boolean
   } = await meResponse.json()
 
@@ -63,6 +64,7 @@ export async function farmerLogin(
     email: userData.email ?? '',
     phone: userData.phone,
     role: userData.role as User['role'],
+    mandiId: userData.mandi_id ?? undefined,
     createdAt: new Date().toISOString(),
   }
 

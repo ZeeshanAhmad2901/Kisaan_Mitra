@@ -20,6 +20,12 @@ export async function getMyVehicles(): Promise<BackendVehicle[]> {
   return apiClient<BackendVehicle[]>('/vehicles/my')
 }
 
+export async function getFarmerVehicles(
+  farmerId: number,
+): Promise<BackendVehicle[]> {
+  return apiClient<BackendVehicle[]>(`/vehicles/farmer/${farmerId}`)
+}
+
 export async function createVehicle(
   vehicle: VehicleCreateRequest,
 ): Promise<BackendVehicle> {

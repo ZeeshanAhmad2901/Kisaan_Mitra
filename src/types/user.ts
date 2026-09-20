@@ -1,4 +1,4 @@
-export type UserRole = 'farmer' | 'mandiOwner' | 'superAdmin'
+export type UserRole = 'farmer' | 'mandiOwner' | 'mandiOperator' | 'superAdmin'
 
 export interface User {
   id: string
@@ -6,6 +6,7 @@ export interface User {
   email: string
   phone: string
   role: UserRole
+  mandiId?: number
   avatar?: string
   createdAt: string
 }

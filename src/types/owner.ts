@@ -1,7 +1,7 @@
 import type { MandiOwner } from './user'
 
 export interface OwnerProfile extends MandiOwner {
-  mandiId: string
+  mandiId: number
   totalSlots: number
   availableSlots: number
 }

@@ -39,6 +39,38 @@ def register_user(
             status_code=status.HTTP_409_CONFLICT,
             detail=str(exc),
         ) from exc
+
+
+@router.get("/farmers/search", response_model=list[UserResponse])
+def search_farmers(
+    search: str,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(
+        require_role("mandiOwner", "mandiOperator", "superAdmin")
+    ),
+):
+    search = search.strip()
+
+    if not search:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Search value cannot be empty",
+        )
+
+    users, _ = get_all_users(
+        db,
+        page=1,
+        page_size=20,
+        search=search,
+    )
+
+    return [
+        user
+        for user in users
+        if user.role == "farmer" and user.is_active
+    ]
+
+
 @router.get("/", response_model=UserListResponse)
 def list_users(
     page: int = 1,
@@ -75,6 +107,7 @@ def list_users(
         "page_size": page_size,
         "pages": pages,
     }
+
 
 @router.get("/{user_id}", response_model=UserResponse)
 def get_user(

@@ -1,136 +1,461 @@
-import { useState } from 'react';
-import { formatIndianCurrency } from '../../utils/formatters';
+import { useEffect, useMemo, useState } from 'react'
+import {
+  getCropDistribution,
+  getMonthlyRevenue,
+  getWeeklyRevenue,
+  type CropDistribution,
+  type MonthlyAnalytics,
+  type WeeklyAnalytics,
+} from '../../api/analyticsApi'
+import { formatIndianCurrency } from '../../utils/formatters'
 
 type PeriodType = 'week' | 'month' | 'year'
 
-const MOCK_DATA: Record<PeriodType, { label: string; revenue: number; transactions: number; farmers: number; growth: number }> = {
-  week: { label: 'This Week', revenue: 2080000, transactions: 79, farmers: 47, growth: 12 },
-  month: { label: 'This Month', revenue: 8450000, transactions: 342, farmers: 189, growth: 8 },
-  year: { label: 'This Year', revenue: 124500000, transactions: 8940, farmers: 24500, growth: 23 },
-}
-
-const MOCK_MONTHLY = [
-  { month: 'Jan', revenue: 8500000 },
-  { month: 'Feb', revenue: 9200000 },
-  { month: 'Mar', revenue: 11000000 },
-  { month: 'Apr', revenue: 12500000 },
-  { month: 'May', revenue: 14000000 },
-  { month: 'Jun', revenue: 13200000 },
-  { month: 'Jul', revenue: 10500000 },
-  { month: 'Aug', revenue: 12450000 },
-]
-
-const MOCK_CROPS = [
-  { crop: 'Wheat', percentage: 35, trend: 'up' },
-  { crop: 'Rice', percentage: 28, trend: 'up' },
-  { crop: 'Potato', percentage: 18, trend: 'down' },
-  { crop: 'Mustard', percentage: 12, trend: 'up' },
-  { crop: 'Onion', percentage: 7, trend: 'down' },
-]
-
-const MAX_MONTHLY = Math.max(...MOCK_MONTHLY.map((m) => m.revenue))
-
 function PlatformAnalyticsPage() {
   const [period, setPeriod] = useState<PeriodType>('month')
-  const data = MOCK_DATA[period]
+  const [weeklyData, setWeeklyData] = useState<WeeklyAnalytics[]>([])
+  const [monthlyData, setMonthlyData] = useState<MonthlyAnalytics[]>([])
+  const [cropData, setCropData] = useState<CropDistribution[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+
+  const loadAnalytics = async () => {
+    try {
+      setLoading(true)
+      setError('')
+
+      const [weekly, monthly, crops] = await Promise.all([
+        getWeeklyRevenue(),
+        getMonthlyRevenue(),
+        getCropDistribution(),
+      ])
+
+      setWeeklyData(weekly)
+      setMonthlyData(monthly)
+      setCropData(crops)
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to load platform analytics',
+      )
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    void loadAnalytics()
+  }, [])
+
+  const periodData = useMemo(() => {
+    if (period === 'week') {
+      return {
+        label: 'This Week',
+        revenue: weeklyData.reduce((sum, item) => sum + item.revenue, 0),
+        transactions: weeklyData.reduce(
+          (sum, item) => sum + item.transactions,
+          0,
+        ),
+        farmers: new Set(
+          weeklyData
+            .filter((item) => item.farmers > 0)
+            .map((item) => item.date),
+        ).size,
+      }
+    }
+
+    if (period === 'month') {
+      const latest = monthlyData[monthlyData.length - 1]
+
+      return {
+        label: latest
+          ? `${latest.month} ${latest.year}`
+          : 'This Month',
+        revenue: latest?.revenue ?? 0,
+        transactions: latest?.transactions ?? 0,
+        farmers: latest?.farmers ?? 0,
+      }
+    }
+
+    return {
+      label: 'This Year',
+      revenue: monthlyData.reduce((sum, item) => sum + item.revenue, 0),
+      transactions: monthlyData.reduce(
+        (sum, item) => sum + item.transactions,
+        0,
+      ),
+      farmers: monthlyData.reduce(
+        (sum, item) => sum + item.farmers,
+        0,
+      ),
+    }
+  }, [period, weeklyData, monthlyData])
+
+  const averageTransaction =
+    periodData.transactions > 0
+      ? periodData.revenue / periodData.transactions
+      : 0
+
+  const maxMonthlyRevenue = useMemo(
+    () =>
+      Math.max(
+        ...monthlyData.map((item) => item.revenue),
+        1,
+      ),
+    [monthlyData],
+  )
+
+  const topCrops = useMemo(
+    () => cropData.slice(0, 6),
+    [cropData],
+  )
+
+  if (loading) {
+    return (
+      <div className="px-4 py-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="p-10 text-center bg-white border border-gray-200 rounded-xl">
+            <div className="w-10 h-10 mx-auto border-4 border-gray-200 rounded-full border-t-green-600 animate-spin" />
+            <p className="mt-4 text-sm text-gray-500">
+              Loading real platform analytics...
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="px-4 py-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="p-6 border border-red-200 rounded-xl bg-red-50">
+            <h2 className="font-semibold text-red-800">
+              Unable to load analytics
+            </h2>
+
+            <p className="mt-2 text-sm text-red-600">
+              {error}
+            </p>
+
+            <button
+              type="button"
+              onClick={() => void loadAnalytics()}
+              className="px-4 py-2 mt-4 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="px-4 py-8">
       <div className="mx-auto max-w-7xl">
-        <h1 className="text-2xl font-bold text-gray-900">Platform Analytics</h1>
-        <p className="mt-1 text-gray-500">Comprehensive platform performance metrics</p>
+        {/* Header */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Platform Analytics
+            </h1>
+
+            <p className="mt-1 text-gray-500">
+              Real procurement and transaction analytics
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => void loadAnalytics()}
+            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+          >
+            Refresh
+          </button>
+        </div>
 
         {/* Period Selector */}
         <div className="flex gap-2 mt-6">
-          {(['week', 'month', 'year'] as PeriodType[]).map((p) => (
+          {(['week', 'month', 'year'] as PeriodType[]).map((item) => (
             <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors capitalize ${period === p ? 'bg-green-700 text-white' : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'}`}
+              key={item}
+              type="button"
+              onClick={() => setPeriod(item)}
+              className={`px-4 py-2 text-sm font-medium rounded-lg capitalize transition-colors ${
+                period === item
+                  ? 'bg-green-700 text-white'
+                  : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
+              }`}
             >
-              {p}
+              {item}
             </button>
           ))}
         </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 gap-4 mt-6 md:grid-cols-4">
-          <div className="p-5 bg-white border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-500">{data.label} Revenue</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{formatIndianCurrency(data.revenue)}</p>
-            <p className="mt-1 text-xs text-green-600">↑ {data.growth}% vs last {period}</p>
+          <div className="p-5 bg-white border border-gray-200 rounded-xl">
+            <p className="text-sm text-gray-500">
+              {periodData.label} Revenue
+            </p>
+
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {formatIndianCurrency(periodData.revenue)}
+            </p>
+
+            <p className="mt-2 text-xs text-gray-500">
+              From recorded procurement
+            </p>
           </div>
-          <div className="p-5 bg-white border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-500">Transactions</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{data.transactions.toLocaleString('en-IN')}</p>
-            <p className="mt-1 text-xs text-green-600">↑ {data.growth - 2}% vs last {period}</p>
+
+          <div className="p-5 bg-white border border-gray-200 rounded-xl">
+            <p className="text-sm text-gray-500">
+              Transactions
+            </p>
+
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {periodData.transactions.toLocaleString('en-IN')}
+            </p>
+
+            <p className="mt-2 text-xs text-gray-500">
+              Recorded procurement transactions
+            </p>
           </div>
-          <div className="p-5 bg-white border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-500">Active Farmers</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{data.farmers.toLocaleString('en-IN')}</p>
-            <p className="mt-1 text-xs text-green-600">↑ {data.growth + 5}% vs last {period}</p>
+
+          <div className="p-5 bg-white border border-gray-200 rounded-xl">
+            <p className="text-sm text-gray-500">
+              Farmers
+            </p>
+
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {periodData.farmers.toLocaleString('en-IN')}
+            </p>
+
+            <p className="mt-2 text-xs text-gray-500">
+              Farmers represented in analytics data
+            </p>
           </div>
-          <div className="p-5 bg-white border border-gray-200 rounded-lg">
-            <p className="text-sm text-gray-500">Avg Transaction</p>
-            <p className="mt-1 text-2xl font-bold text-gray-900">{formatIndianCurrency(Math.round(data.revenue / data.transactions))}</p>
-            <p className="mt-1 text-xs text-blue-600">→ Stable</p>
+
+          <div className="p-5 bg-white border border-gray-200 rounded-xl">
+            <p className="text-sm text-gray-500">
+              Avg Transaction
+            </p>
+
+            <p className="mt-1 text-2xl font-bold text-gray-900">
+              {formatIndianCurrency(averageTransaction)}
+            </p>
+
+            <p className="mt-2 text-xs text-blue-600">
+              Calculated from real records
+            </p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 mt-8 lg:grid-cols-3">
-          {/* Monthly Revenue Chart */}
-          <div className="p-5 bg-white border border-gray-200 rounded-lg lg:col-span-2">
-            <h2 className="mb-6 font-bold text-gray-900">Monthly Revenue Trend</h2>
-            <div className="flex items-end gap-3 h-52">
-              {MOCK_MONTHLY.map((m) => (
-                <div key={m.month} className="flex flex-col items-center flex-1 gap-1">
-                  <span className="text-xs text-gray-500">{formatIndianCurrency(m.revenue / 100000)}L</span>
-                  <div
-                    className="w-full transition-colors bg-blue-500 cursor-pointer rounded-t-md hover:bg-blue-600"
-                    style={{ height: `${(m.revenue / MAX_MONTHLY) * 100}%` }}
-                  />
-                  <span className="text-xs font-medium text-gray-600">{m.month}</span>
-                </div>
-              ))}
+          {/* Monthly Revenue */}
+          <div className="p-5 bg-white border border-gray-200 rounded-xl lg:col-span-2">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="font-bold text-gray-900">
+                  Monthly Revenue Trend
+                </h2>
+
+                <p className="mt-1 text-xs text-gray-500">
+                  Real procurement revenue recorded this year
+                </p>
+              </div>
+
+              <span className="px-3 py-1 text-xs font-medium text-green-700 rounded-full bg-green-50">
+                Live data
+              </span>
             </div>
+
+            {monthlyData.length === 0 ? (
+              <div className="py-16 text-sm text-center text-gray-500">
+                No monthly procurement data available.
+              </div>
+            ) : (
+              <div className="flex items-end gap-3 h-60">
+                {monthlyData.map((item) => (
+                  <div
+                    key={`${item.year}-${item.month}`}
+                    className="flex flex-col items-center flex-1 h-full gap-2"
+                  >
+                    <span className="text-xs text-gray-500">
+                      {formatIndianCurrency(item.revenue)}
+                    </span>
+
+                    <div className="flex items-end flex-1 w-full">
+                      <div
+                        className="w-full transition-all bg-blue-500 rounded-t-md hover:bg-blue-600"
+                        style={{
+                          height: `${Math.max(
+                            4,
+                            (item.revenue / maxMonthlyRevenue) * 100,
+                          )}%`,
+                        }}
+                        title={`${item.month} ${item.year}: ${formatIndianCurrency(item.revenue)}`}
+                      />
+                    </div>
+
+                    <span className="text-xs font-medium text-gray-600">
+                      {item.month}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Crop Distribution */}
-          <div className="p-5 bg-white border border-gray-200 rounded-lg">
-            <h2 className="mb-6 font-bold text-gray-900">Crop Distribution</h2>
-            <div className="space-y-4">
-              {MOCK_CROPS.map((c) => (
-                <div key={c.crop}>
-                  <div className="flex items-center justify-between mb-1 text-sm">
-                    <span className="font-medium text-gray-900">🌾 {c.crop}</span>
-                    <span className="text-xs font-medium text-gray-500">{c.trend === 'up' ? '↑' : '↓'} {c.percentage}%</span>
-                  </div>
-                  <div className="w-full h-3 bg-gray-100 rounded-full">
-                    <div
-                      className={`h-3 rounded-full transition-all ${c.trend === 'up' ? 'bg-green-500' : 'bg-red-400'}`}
-                      style={{ width: `${c.percentage}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+          <div className="p-5 bg-white border border-gray-200 rounded-xl">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="font-bold text-gray-900">
+                  Crop Distribution
+                </h2>
+
+                <p className="mt-1 text-xs text-gray-500">
+                  Based on procurement transactions
+                </p>
+              </div>
+
+              <span className="text-xs text-gray-400">
+                {cropData.length} crops
+              </span>
             </div>
 
-            {/* Quick Stats */}
-            <div className="pt-6 mt-6 space-y-3 border-t border-gray-200">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Peak Hour</span>
-                <span className="font-medium text-gray-900">7:00 - 9:00 AM</span>
+            {topCrops.length === 0 ? (
+              <div className="py-12 text-sm text-center text-gray-500">
+                No crop procurement data available.
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Peak Day</span>
-                <span className="font-medium text-gray-900">Thursday</span>
+            ) : (
+              <div className="space-y-5">
+                {topCrops.map((crop) => (
+                  <div key={crop.crop}>
+                    <div className="flex items-center justify-between gap-3 mb-2">
+                      <span className="text-sm font-medium text-gray-900">
+                        🌾 {crop.crop}
+                      </span>
+
+                      <span className="text-xs font-semibold text-gray-600">
+                        {crop.percentage.toFixed(1)}%
+                      </span>
+                    </div>
+
+                    <div className="w-full h-3 overflow-hidden bg-gray-100 rounded-full">
+                      <div
+                        className="h-full transition-all bg-green-500 rounded-full"
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            Math.max(0, crop.percentage),
+                          )}%`,
+                        }}
+                      />
+                    </div>
+
+                    <p className="mt-1 text-xs text-gray-400">
+                      {crop.transactions.toLocaleString('en-IN')}{' '}
+                      transactions ·{' '}
+                      {formatIndianCurrency(crop.revenue)}
+                    </p>
+                  </div>
+                ))}
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Avg Wait Time</span>
-                <span className="font-medium text-gray-900">35 minutes</span>
-              </div>
-            </div>
+            )}
           </div>
+        </div>
+
+        {/* Weekly Analytics */}
+        <div className="mt-8 overflow-hidden bg-white border border-gray-200 rounded-xl">
+          <div className="p-5 border-b border-gray-200">
+            <h2 className="font-bold text-gray-900">
+              Last 7 Days
+            </h2>
+
+            <p className="mt-1 text-xs text-gray-500">
+              Daily procurement activity from real records
+            </p>
+          </div>
+
+          {weeklyData.length === 0 ? (
+            <div className="p-8 text-sm text-center text-gray-500">
+              No weekly analytics available.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-5 py-3 font-medium text-left text-gray-700">
+                      Day
+                    </th>
+
+                    <th className="px-5 py-3 font-medium text-left text-gray-700">
+                      Date
+                    </th>
+
+                    <th className="px-5 py-3 font-medium text-right text-gray-700">
+                      Revenue
+                    </th>
+
+                    <th className="px-5 py-3 font-medium text-right text-gray-700">
+                      Transactions
+                    </th>
+
+                    <th className="px-5 py-3 font-medium text-right text-gray-700">
+                      Farmers
+                    </th>
+                  </tr>
+                </thead>
+
+                <tbody className="divide-y divide-gray-100">
+                  {weeklyData.map((item) => (
+                    <tr
+                      key={item.date}
+                      className="hover:bg-gray-50"
+                    >
+                      <td className="px-5 py-4 font-medium text-gray-900">
+                        {item.day}
+                      </td>
+
+                      <td className="px-5 py-4 text-gray-600">
+                        {item.date}
+                      </td>
+
+                      <td className="px-5 py-4 font-semibold text-right text-gray-900">
+                        {formatIndianCurrency(item.revenue)}
+                      </td>
+
+                      <td className="px-5 py-4 text-right text-gray-600">
+                        {item.transactions.toLocaleString('en-IN')}
+                      </td>
+
+                      <td className="px-5 py-4 text-right text-gray-600">
+                        {item.farmers.toLocaleString('en-IN')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Data Note */}
+        <div className="p-4 mt-6 border border-blue-100 rounded-xl bg-blue-50">
+          <p className="text-sm font-medium text-blue-900">
+            Analytics source
+          </p>
+
+          <p className="mt-1 text-xs leading-5 text-blue-700">
+            All figures on this page are calculated from persisted
+            procurement records through the FastAPI analytics endpoints.
+            No mock or hardcoded business metrics are used.
+          </p>
         </div>
       </div>
     </div>

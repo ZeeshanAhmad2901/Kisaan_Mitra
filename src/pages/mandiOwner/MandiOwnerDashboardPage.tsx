@@ -9,6 +9,7 @@ import { getSlots, type BackendSlot } from '../../api/slotApi'
 import type { CropPrice } from '../../types'
 import { formatIndianCurrency } from '../../utils/formatters'
 
+
 const STATUS_META: Record<
   string,
   {

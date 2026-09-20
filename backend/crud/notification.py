@@ -30,6 +30,41 @@ def create_notification(
     return notification
 
 
+def list_notifications(
+    db: Session,
+    user_id: int,
+    page: int = 1,
+    page_size: int = 20,
+):
+    page = max(1, page)
+    page_size = max(1, min(page_size, 100))
+
+    query = (
+        db.query(Notification)
+        .filter(Notification.user_id == user_id)
+        .order_by(Notification.created_at.desc())
+    )
+
+    total = query.count()
+
+    notifications = (
+        query
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+        .all()
+    )
+
+    total_pages = ceil(total / page_size) if total else 0
+
+    return {
+        "items": notifications,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+    }
+
+
 def get_user_notifications(
     db: Session,
     *,
@@ -38,12 +73,17 @@ def get_user_notifications(
     page_size: int = 20,
     unread_only: bool = False,
 ):
+    page = max(1, page)
+    page_size = max(1, min(page_size, 100))
+
     query = db.query(Notification).filter(
         Notification.user_id == user_id
     )
 
     if unread_only:
-        query = query.filter(Notification.is_read.is_(False))
+        query = query.filter(
+            Notification.is_read.is_(False)
+        )
 
     total = query.count()
 
@@ -68,10 +108,8 @@ def get_user_notifications(
 
     return items, total, unread_count, pages
 
-
 def mark_notification_read(
     db: Session,
-    *,
     notification_id: int,
     user_id: int,
 ):
@@ -84,18 +122,18 @@ def mark_notification_read(
         .first()
     )
 
-    if not notification:
+    if notification is None:
         return None
 
     notification.is_read = True
-    db.flush()
+    db.commit()
+    db.refresh(notification)
 
     return notification
 
 
 def mark_all_notifications_read(
     db: Session,
-    *,
     user_id: int,
 ):
     updated = (
@@ -105,11 +143,11 @@ def mark_all_notifications_read(
             Notification.is_read.is_(False),
         )
         .update(
-            {Notification.is_read: True},
+            {"is_read": True},
             synchronize_session=False,
         )
     )
 
-    db.flush()
+    db.commit()
 
     return updated

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
+import { useTranslation } from 'react-i18next'
 import type { MandiBooking } from '../../api/bookingApi'
 import { getMyBookings } from '../../api/bookingApi'
 import { getCropPrices } from '../../api/mandiApi'
@@ -13,6 +14,7 @@ import type { CropPrice } from '../../types'
 import { formatIndianCurrency } from '../../utils/formatters'
 
 function FarmerDashboardPage() {
+  const { t } = useTranslation()
   const [prices, setPrices] = useState<CropPrice[]>([])
   const [loadingPrices, setLoadingPrices] = useState(true)
 
@@ -224,27 +226,27 @@ function FarmerDashboardPage() {
               <div className="flex items-center gap-3">
 
                 <div className="flex items-center justify-center text-xl text-white bg-green-800 shadow-sm h-11 w-11 rounded-xl">
-                  🌾
+                  Ã°Å¸Å’Â¾
                 </div>
 
                 <div>
                   <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
-                    Government Digital Agriculture Service
+                    {t('farmerDashboard.serviceLabel')}
                   </p>
 
                   <h1 className="mt-1 text-2xl font-black tracking-tight text-gray-900 sm:text-3xl">
-                    Farmer Service Dashboard
+                    {t('farmerDashboard.title')}
                   </h1>
                 </div>
 
               </div>
 
               <p className="mt-3 text-sm text-gray-500">
-                Welcome back,{' '}
+                {t('farmerDashboard.welcome', { name: farmerName })}
                 <span className="font-semibold text-gray-800">
                   {farmerName}
                 </span>
-                . Manage your mandi visits and procurement activity from one place.
+
               </p>
             </div>
 
@@ -252,7 +254,7 @@ function FarmerDashboardPage() {
               to="/farmer/book-slot"
               className="inline-flex items-center justify-center px-5 py-3 text-sm font-bold text-white transition bg-green-800 shadow-sm rounded-xl hover:bg-green-900"
             >
-              + Book Mandi Slot
+              + {t('farmerDashboard.bookMandiSlot')}
             </Link>
 
           </div>
@@ -261,7 +263,7 @@ function FarmerDashboardPage() {
       </section>
 
       {/* =========================================================
-          QUICK ACTIONS
+          {t('farmerDashboard.quickActions')}
       ========================================================= */}
       <section className="px-4 pt-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
 
@@ -279,15 +281,15 @@ function FarmerDashboardPage() {
                 </p>
 
                 <h2 className="mt-2 text-lg font-black text-gray-900">
-                  Book a Mandi Slot
+                  {t('farmerDashboard.bookSlot')}
                 </h2>
 
                 <p className="mt-1 text-sm text-gray-600">
-                  Choose mandi, crop, vehicle and preferred time.
+                  {t('farmerDashboard.bookSlotDescription')}
                 </p>
               </div>
 
-              <span className="text-2xl">📅</span>
+              <span className="text-2xl">Ã°Å¸â€œâ€¦</span>
 
             </div>
           </Link>
@@ -304,15 +306,15 @@ function FarmerDashboardPage() {
                 </p>
 
                 <h2 className="mt-2 text-lg font-black text-gray-900">
-                  My Bookings
+                  {t('farmerDashboard.myBookings')}
                 </h2>
 
                 <p className="mt-1 text-sm text-gray-600">
-                  View your confirmed and completed mandi visits.
+                  {t('farmerDashboard.myBookingsDescription')}
                 </p>
               </div>
 
-              <span className="text-2xl">📋</span>
+              <span className="text-2xl">Ã°Å¸â€œâ€¹</span>
 
             </div>
           </Link>
@@ -333,11 +335,11 @@ function FarmerDashboardPage() {
                 </h2>
 
                 <p className="mt-1 text-sm text-gray-600">
-                  Keep your registered vehicles ready for booking.
+                  {t('farmerDashboard.manageVehiclesDescription')}
                 </p>
               </div>
 
-              <span className="text-2xl">🚜</span>
+              <span className="text-2xl">Ã°Å¸Å¡Å“</span>
 
             </div>
           </Link>
@@ -359,7 +361,7 @@ function FarmerDashboardPage() {
 
               <div>
                 <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
-                  Upcoming Visit
+                  {t('farmerDashboard.upcomingVisit')}
                 </p>
 
                 <p className="mt-3 text-2xl font-black text-green-800">
@@ -377,13 +379,13 @@ function FarmerDashboardPage() {
 
                 <p className="mt-1 text-xs text-gray-500">
                   {upcomingBooking
-                    ? `${upcomingBooking.mandi_name} · ${upcomingBooking.start_time.slice(0, 5)}`
-                    : 'No upcoming visit'}
+                    ? `${upcomingBooking.mandi_name} Ã‚Â· ${upcomingBooking.start_time.slice(0, 5)}`
+                    : t('farmerDashboard.noUpcomingVisit')}
                 </p>
               </div>
 
               <div className="px-3 py-2 text-xl bg-green-100 rounded-xl">
-                📅
+                Ã°Å¸â€œâ€¦
               </div>
 
             </div>
@@ -395,7 +397,7 @@ function FarmerDashboardPage() {
 
               <div>
                 <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
-                  Completed Visits
+                  {t('farmerDashboard.completedVisits')}
                 </p>
 
                 <p className="mt-3 text-2xl font-black text-blue-800">
@@ -408,12 +410,12 @@ function FarmerDashboardPage() {
                 </p>
 
                 <p className="mt-1 text-xs text-gray-500">
-                  Procurement visits completed
+                  {t('farmerDashboard.completedVisitsDescription')}
                 </p>
               </div>
 
               <div className="px-3 py-2 text-xl bg-blue-100 rounded-xl">
-                ✓
+                Ã¢Å“â€œ
               </div>
 
             </div>
@@ -426,7 +428,7 @@ function FarmerDashboardPage() {
 
               <div>
                 <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
-                  Registered Vehicles
+                  {t('farmerDashboard.registeredVehicles')}
                 </p>
 
                 <p className="mt-2 text-2xl font-black text-orange-700">
@@ -440,19 +442,19 @@ function FarmerDashboardPage() {
                 </p>
 
                 <p className="mt-1 text-xs text-gray-500">
-                  Active vehicles ready for booking
+                  {t('farmerDashboard.registeredVehiclesDescription')}
                 </p>
               </div>
 
               <div className="px-3 py-2 text-xl bg-orange-100 rounded-xl">
-                🚜
+                Ã°Å¸Å¡Å“
               </div>
 
             </div>
 
             {loadingVehicles ? (
               <div className="p-4 mt-5 text-sm text-gray-500 bg-gray-50 rounded-xl">
-                Loading vehicle details...
+                {t('farmerDashboard.loadingVehicleDetails')}
               </div>
             ) : vehicles.filter(
                 (vehicle) => vehicle.is_active,
@@ -460,18 +462,18 @@ function FarmerDashboardPage() {
               <div className="p-4 mt-5 border border-orange-100 bg-orange-50 rounded-xl">
 
                 <p className="text-sm font-semibold text-gray-800">
-                  No active vehicle registered
+                  {t('farmerDashboard.noActiveVehicle')}
                 </p>
 
                 <p className="mt-1 text-xs text-gray-500">
-                  Register a vehicle before booking a mandi slot.
+                  {t('farmerDashboard.registerVehicleBeforeBooking')}
                 </p>
 
                 <Link
                   to="/farmer/vehicles"
                   className="inline-block mt-3 text-xs font-bold text-orange-700 hover:text-orange-800"
                 >
-                  Manage Vehicles →
+                  Manage Vehicles Ã¢â€ â€™
                 </Link>
 
               </div>
@@ -492,7 +494,7 @@ function FarmerDashboardPage() {
                         </p>
 
                         <p className="mt-1 text-xs text-gray-500">
-                          {vehicle.vehicle_type} · Vehicle ID #{vehicle.id}
+                          {vehicle.vehicle_type} Ã‚Â· Vehicle ID #{vehicle.id}
                         </p>
                       </div>
 
@@ -507,7 +509,7 @@ function FarmerDashboardPage() {
                   to="/farmer/vehicles"
                   className="block text-xs font-bold text-center text-orange-700 hover:text-orange-800"
                 >
-                  Manage Vehicles →
+                  Manage Vehicles Ã¢â€ â€™
                 </Link>
 
               </div>
@@ -522,7 +524,7 @@ function FarmerDashboardPage() {
 
               <div>
                 <p className="text-xs font-bold tracking-wider text-gray-500 uppercase">
-                  Current Crop Price
+                  {t('farmerDashboard.currentCropPrice')}
                 </p>
 
                 <p className="mt-3 text-2xl font-black text-green-800">
@@ -536,12 +538,12 @@ function FarmerDashboardPage() {
                 </p>
 
                 <p className="mt-1 text-xs text-gray-500">
-                  {highestPrice?.cropName ?? 'No data'} · modal price
+                  {highestPrice?.cropName ?? t('farmerDashboard.noData')} Ã‚Â· modal price
                 </p>
               </div>
 
               <div className="px-3 py-2 text-xl bg-green-100 rounded-xl">
-                ₹
+                Ã¢â€šÂ¹
               </div>
 
             </div>
@@ -563,7 +565,7 @@ function FarmerDashboardPage() {
 
             <div>
               <p className="text-xs font-bold tracking-widest text-green-700 uppercase">
-                Financial Records
+                {t('farmerDashboard.financialRecords')}
               </p>
 
               <h2 className="mt-1 text-xl font-black text-gray-900">
@@ -571,7 +573,7 @@ function FarmerDashboardPage() {
               </h2>
 
               <p className="mt-1 text-sm text-gray-500">
-                Your actual procurement and payment records from the mandi.
+                {t('farmerDashboard.procurementAndPaymentDescription')}
               </p>
             </div>
 
@@ -579,7 +581,7 @@ function FarmerDashboardPage() {
               to="/farmer/bookings"
               className="text-sm font-bold text-green-700 hover:text-green-900"
             >
-              View full records →
+              View full records Ã¢â€ â€™
             </Link>
 
           </div>
@@ -590,7 +592,7 @@ function FarmerDashboardPage() {
             <div className="p-5 border border-green-100 bg-green-50 rounded-2xl">
 
               <p className="text-xs font-bold tracking-wider text-green-700 uppercase">
-                Total Procurement
+                {t('farmerDashboard.totalProcurement')}
               </p>
 
               <p className="mt-2 text-2xl font-black text-green-900">
@@ -612,7 +614,7 @@ function FarmerDashboardPage() {
             <div className="p-5 border border-blue-100 bg-blue-50 rounded-2xl">
 
               <p className="text-xs font-bold tracking-wider text-blue-700 uppercase">
-                Paid Amount
+                {t('farmerDashboard.paidAmount')}
               </p>
 
               <p className="mt-2 text-2xl font-black text-blue-900">
@@ -624,7 +626,7 @@ function FarmerDashboardPage() {
               </p>
 
               <p className="mt-1 text-xs text-blue-700">
-                Successfully paid
+                {t('farmerDashboard.successfullyPaid')}
               </p>
 
             </div>
@@ -633,7 +635,7 @@ function FarmerDashboardPage() {
             <div className="p-5 border bg-emerald-50 border-emerald-100 rounded-2xl">
 
               <p className="text-xs font-bold tracking-wider uppercase text-emerald-700">
-                Paid Records
+                {t('farmerDashboard.paidRecords')}
               </p>
 
               <p className="mt-2 text-2xl font-black text-emerald-900">
@@ -643,7 +645,7 @@ function FarmerDashboardPage() {
               </p>
 
               <p className="mt-1 text-xs text-emerald-700">
-                Payment completed
+                {t('farmerDashboard.paymentCompleted')}
               </p>
 
             </div>
@@ -652,7 +654,7 @@ function FarmerDashboardPage() {
             <div className="p-5 border border-orange-100 bg-orange-50 rounded-2xl">
 
               <p className="text-xs font-bold tracking-wider text-orange-700 uppercase">
-                Pending Payment
+                {t('farmerDashboard.pendingPayment')}
               </p>
 
               <p className="mt-2 text-2xl font-black text-orange-900">
@@ -662,7 +664,7 @@ function FarmerDashboardPage() {
               </p>
 
               <p className="mt-1 text-xs text-orange-700">
-                Awaiting payment
+                {t('farmerDashboard.awaitingPayment')}
               </p>
 
             </div>
@@ -683,7 +685,7 @@ function FarmerDashboardPage() {
 
                   <div>
                     <p className="text-xs font-bold tracking-widest text-gray-500 uppercase">
-                      Latest Procurement
+                      {t('farmerDashboard.latestProcurement')}
                     </p>
 
                     <h3 className="mt-1 text-lg font-black text-gray-900">
@@ -691,14 +693,14 @@ function FarmerDashboardPage() {
                     </h3>
 
                     <p className="mt-1 text-sm text-gray-500">
-                      Weighed:{' '}
+                      {t('farmerDashboard.weighed')}{' '}
                       <span className="font-semibold text-gray-800">
                         {procurementStats.latest.weighed_quantity} quintal
                       </span>
 
-                      {' · '}
+                      {' Ã‚Â· '}
 
-                      Grade:{' '}
+                      {t('farmerDashboard.grade')}{' '}
                       <span className="font-semibold text-gray-800">
                         {procurementStats.latest.quality_grade}
                       </span>
@@ -708,7 +710,7 @@ function FarmerDashboardPage() {
                   <div className="text-left sm:text-right">
 
                     <p className="text-xs font-semibold text-gray-500">
-                      Procurement Amount
+                      {t('farmerDashboard.procurementAmount')}
                     </p>
 
                     <p className="mt-1 text-xl font-black text-gray-900">
@@ -725,8 +727,8 @@ function FarmerDashboardPage() {
                       }`}
                     >
                       {procurementStats.latest.payment_status === 'paid'
-                        ? '✓ PAID'
-                        : 'PAYMENT PENDING'}
+                        ? 'Ã¢Å“â€œ PAID'
+                        : t('farmerDashboard.paymentPending')}
                     </span>
 
                   </div>
@@ -765,20 +767,20 @@ function FarmerDashboardPage() {
 
               <div>
                 <p className="text-xs font-bold tracking-widest text-green-700 uppercase">
-                  Activity Overview
+                  {t('farmerDashboard.activityOverview')}
                 </p>
 
                 <h2 className="mt-2 text-xl font-black text-gray-900">
-                  Mandi Visit Activity
+                  {t('farmerDashboard.mandiVisitActivity')}
                 </h2>
 
                 <p className="mt-1 text-sm text-gray-500">
-                  Recent booking activity across the current week.
+                  {t('farmerDashboard.recentBookingActivity')}
                 </p>
               </div>
 
               <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700">
-                This Week
+                {t('farmerDashboard.thisWeek')}
               </span>
 
             </div>
@@ -819,7 +821,7 @@ function FarmerDashboardPage() {
 
             <div className="flex items-center gap-2 mt-5 text-xs text-gray-500">
               <span className="w-2 h-2 bg-green-700 rounded-full" />
-              Number of scheduled mandi activities
+              {t('farmerDashboard.scheduledMandiActivities')}
             </div>
 
           </div>
@@ -829,15 +831,15 @@ function FarmerDashboardPage() {
 
             <div>
               <p className="text-xs font-bold tracking-widest text-green-700 uppercase">
-                Market Information
+                {t('farmerDashboard.marketInformation')}
               </p>
 
               <h2 className="mt-2 text-xl font-black text-gray-900">
-                Current Crop Prices
+                {t('farmerDashboard.currentCropPrices')}
               </h2>
 
               <p className="mt-1 text-sm text-gray-500">
-                Latest available modal prices from connected mandis.
+                {t('farmerDashboard.latestModalPrices')}
               </p>
             </div>
 
@@ -886,7 +888,7 @@ function FarmerDashboardPage() {
                 })
               ) : (
                 <div className="p-4 text-sm text-gray-500 rounded-xl bg-gray-50">
-                  Crop price data is currently unavailable.
+                  {t('farmerDashboard.cropPriceUnavailable')}
                 </div>
               )}
 
@@ -917,13 +919,13 @@ function FarmerDashboardPage() {
 
                 <h2 className="mt-2 text-2xl font-black text-gray-900">
                   {upcomingBooking
-                    ? `${upcomingBooking.crop_type} · ${upcomingBooking.mandi_name}`
-                    : 'No upcoming procurement'}
+                    ? `${upcomingBooking.crop_type} Ã‚Â· ${upcomingBooking.mandi_name}`
+                    : t('farmerDashboard.noUpcomingProcurement')}
                 </h2>
               </div>
 
               <span className="rounded-full bg-green-700 px-3 py-1.5 text-xs font-bold text-white">
-                {upcomingBooking?.status ?? 'No booking'}
+                {upcomingBooking?.status ?? t('farmerDashboard.noBooking')}
               </span>
 
             </div>
@@ -1006,7 +1008,7 @@ function FarmerDashboardPage() {
             <div className="flex items-center gap-3">
 
               <div className="flex items-center justify-center w-10 h-10 bg-orange-100 rounded-xl">
-                📢
+                Ã°Å¸â€œÂ¢
               </div>
 
               <div>
@@ -1024,7 +1026,7 @@ function FarmerDashboardPage() {
             <div className="mt-5 space-y-4 text-sm leading-6 text-gray-600">
 
               <div className="pl-3 border-l-4 border-green-600">
-                Carry your booking QR/token when visiting the mandi.
+                {t('farmerDashboard.carryBookingToken')}
               </div>
 
               <div className="pl-3 border-l-4 border-orange-500">
@@ -1032,7 +1034,7 @@ function FarmerDashboardPage() {
               </div>
 
               <div className="pl-3 border-l-4 border-blue-600">
-                Keep your registered vehicle details up to date.
+                {t('farmerDashboard.keepVehicleUpdated')}
               </div>
 
             </div>
@@ -1044,7 +1046,7 @@ function FarmerDashboardPage() {
       </section>
 
       {/* =========================================================
-          RECENT BOOKINGS
+          {t('farmerDashboard.recentBookings')}
       ========================================================= */}
       <section className="px-4 pb-10 mx-auto max-w-7xl sm:px-6 lg:px-8">
 
@@ -1058,7 +1060,7 @@ function FarmerDashboardPage() {
               </p>
 
               <h2 className="mt-1 text-xl font-black text-gray-900">
-                Recent Mandi Bookings
+                {t('farmerDashboard.recentMandiBookings')}
               </h2>
             </div>
 
@@ -1066,7 +1068,7 @@ function FarmerDashboardPage() {
               to="/farmer/bookings"
               className="text-sm font-bold text-green-700 hover:text-green-900"
             >
-              View all →
+              View all Ã¢â€ â€™
             </Link>
 
           </div>
@@ -1116,7 +1118,7 @@ function FarmerDashboardPage() {
                       colSpan={6}
                       className="px-6 py-8 text-sm text-center text-gray-500"
                     >
-                      Loading your bookings...
+                      {t('farmerDashboard.loadingBookings')}
                     </td>
 
                   </tr>
@@ -1175,7 +1177,7 @@ function FarmerDashboardPage() {
                       colSpan={6}
                       className="px-6 py-8 text-sm text-center text-gray-500"
                     >
-                      No bookings found.
+                      {t('farmerDashboard.noBookings')}
                     </td>
 
                   </tr>
@@ -1199,7 +1201,7 @@ function FarmerDashboardPage() {
         <div className="px-4 py-5 mx-auto text-center max-w-7xl sm:px-6 lg:px-8">
 
           <p className="text-xs text-gray-500">
-            Kisaan Mitra · Digital Mandi Management Platform · Farmer Services
+            {t('farmerDashboard.footer')}
           </p>
 
         </div>

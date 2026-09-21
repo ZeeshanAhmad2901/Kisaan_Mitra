@@ -55,6 +55,13 @@ class Booking(Base):
         nullable=False,
     )
 
+    booking_source: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        server_default=text("'self'"),
+        index=True,
+    )
+
     status: Mapped[str] = mapped_column(
         String(30),
         nullable=False,
@@ -73,4 +80,23 @@ class Booking(Base):
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
         nullable=False,
+    )
+
+    arrival_status: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+        server_default=text("'pending'"),
+        index=True,
+    )
+
+    arrival_verified_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+    )
+
+    arrival_verified_by: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
     )

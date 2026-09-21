@@ -31,5 +31,6 @@ def get_me(
         "phone": user.phone,
         "email": user.email,
         "role": user.role,
+        "mandi_id": user.mandi_id,
         "is_active": user.is_active,
     }

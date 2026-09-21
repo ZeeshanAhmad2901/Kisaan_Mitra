@@ -39,10 +39,12 @@ function LoginPage() {
   if (loggedInUser.role === 'farmer') {
     navigate('/farmer/dashboard')
   } else if (loggedInUser.role === 'mandiOwner') {
-    navigate('/mandi-owner/dashboard')
-  } else if (
-    loggedInUser.role === 'superAdmin'
-  ) {
+  navigate('/mandi-owner/dashboard')
+} else if (loggedInUser.role === 'mandiOperator') {
+  navigate('/mandi-operator/dashboard')
+} else if (
+  loggedInUser.role === 'superAdmin'
+) {
     navigate('/super-admin/dashboard')
   } else {
     navigate('/')

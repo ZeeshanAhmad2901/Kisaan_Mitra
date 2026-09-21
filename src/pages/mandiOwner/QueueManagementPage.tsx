@@ -1,87 +1,37 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  completeBookingProcessing,
+  getMandiBookings,
+  startBookingProcessing,
+  type MandiBooking,
+} from '../../api/bookingApi'
+import { getMandis, type BackendMandi } from '../../api/mandiApi'
+import { useAuth } from '../../store/authStore'
+
+type QueueStatus =
+  | 'next'
+  | 'waiting'
+  | 'in-progress'
+  | 'completed'
 
 interface QueueItem {
-  id: string
+  id: number
   position: number
   farmerName: string
+  farmerId: number
   crop: string
-  quantity: string
+  quantity: number
   vehicle: string
-  arrivalTime: string
-  estimatedWait: string
-  status: 'next' | 'waiting' | 'in-progress' | 'completed'
-}
-
-const MOCK_QUEUE: QueueItem[] = [
-  {
-    id: '1',
-    position: 1,
-    farmerName: 'Amit Singh',
-    crop: 'Potato',
-    quantity: '50 quintal',
-    vehicle: 'UP-32-GH-3456',
-    arrivalTime: '7:00 AM',
-    estimatedWait: '15 min',
-    status: 'next',
-  },
-  {
-    id: '2',
-    position: 2,
-    farmerName: 'Vikram Pal',
-    crop: 'Mustard',
-    quantity: '15 quintal',
-    vehicle: 'UP-32-IJ-7890',
-    arrivalTime: '7:30 AM',
-    estimatedWait: '45 min',
-    status: 'waiting',
-  },
-  {
-    id: '3',
-    position: 3,
-    farmerName: 'Dinesh Verma',
-    crop: 'Wheat',
-    quantity: '30 quintal',
-    vehicle: 'UP-32-MN-1234',
-    arrivalTime: '7:45 AM',
-    estimatedWait: '1 hr 15 min',
-    status: 'waiting',
-  },
-  {
-    id: '4',
-    position: 4,
-    farmerName: 'Prakash Jha',
-    crop: 'Onion',
-    quantity: '20 quintal',
-    vehicle: 'UP-32-OP-5678',
-    arrivalTime: '8:00 AM',
-    estimatedWait: '1 hr 45 min',
-    status: 'waiting',
-  },
-  {
-    id: '5',
-    position: 5,
-    farmerName: 'Kamlesh Tiwari',
-    crop: 'Sugarcane',
-    quantity: '40 quintal',
-    vehicle: 'UP-32-QR-9012',
-    arrivalTime: '8:15 AM',
-    estimatedWait: '2 hr',
-    status: 'waiting',
-  },
-]
-
-const CROP_ICONS: Record<string, string> = {
-  Potato: '🥔',
-  Mustard: '🌼',
-  Wheat: '🌾',
-  Onion: '🧅',
-  Sugarcane: '🎋',
-  Rice: '🌾',
-  Maize: '🌽',
+  bookingCode: string
+  slotDate: string
+  startTime: string
+  endTime: string
+  bookingSource: string
+  status: QueueStatus
 }
 
 const STATUS_META: Record<
-  QueueItem['status'],
+  QueueStatus,
   {
     label: string
     className: string
@@ -110,60 +60,168 @@ const STATUS_META: Record<
   },
 }
 
-function QueueManagementPage() {
-  const [queue, setQueue] = useState<QueueItem[]>(MOCK_QUEUE)
-  const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<'all' | QueueItem['status']>('all')
-
-  const markInProgress = (id: string) => {
-    setQueue((currentQueue) =>
-      currentQueue.map((item) =>
-        item.id === id
-          ? {
-              ...item,
-              status: 'in-progress',
-            }
-          : item,
-      ),
-    )
+function getQueueStatus(
+  booking: MandiBooking,
+  firstWaitingId: number | null,
+): QueueStatus {
+  if (booking.status === 'completed') {
+    return 'completed'
   }
 
-  const markCompleted = (id: string) => {
-  setQueue((currentQueue) => {
-    const updatedQueue = currentQueue.map((item) =>
-      item.id === id
-        ? {
-            ...item,
-            status: 'completed' as const,
-          }
-        : item,
-    )
+  if (booking.status === 'in_progress') {
+    return 'in-progress'
+  }
 
-    // Promote the first waiting farmer to the next position
-    const nextWaiting = updatedQueue.find(
-      (item) => item.status === 'waiting',
-    )
+  if (
+    booking.status === 'confirmed' &&
+    booking.id === firstWaitingId
+  ) {
+    return 'next'
+  }
 
-    if (!nextWaiting) {
-      return updatedQueue
-    }
-
-    return updatedQueue.map((item) =>
-      item.id === nextWaiting.id
-        ? {
-            ...item,
-            status: 'next' as const,
-          }
-        : item,
-    )
-  })
+  return 'waiting'
 }
 
-  const removeFromQueue = (id: string) => {
-    setQueue((currentQueue) =>
-      currentQueue.filter((item) => item.id !== id),
-    )
-  }
+function formatTime(value: string) {
+  return value.slice(0, 5)
+}
+
+function QueueManagementPage() {
+  const { user } = useAuth()
+
+  const [, setMandis] = useState<BackendMandi[]>([])
+  const [bookings, setBookings] = useState<MandiBooking[]>([])
+  const [selectedMandi, setSelectedMandi] =
+    useState<BackendMandi | null>(null)
+
+  const [search, setSearch] = useState('')
+  const [filter, setFilter] =
+    useState<'all' | QueueStatus>('all')
+
+  const [loading, setLoading] = useState(true)
+  const [actionId, setActionId] = useState<number | null>(null)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadMandis() {
+      try {
+        setLoading(true)
+        setError('')
+
+        const data = await getMandis()
+
+        if (cancelled) {
+          return
+        }
+
+        setMandis(data)
+
+        const ownerMandi =
+          data.find(
+            (mandi) =>
+              mandi.owner_id === Number(user?.id),
+          ) ?? null
+
+        setSelectedMandi(ownerMandi)
+
+        if (!ownerMandi) {
+          setBookings([])
+          setError(
+            'No active mandi is assigned to this account.',
+          )
+          return
+        }
+
+        const mandiBookings = await getMandiBookings(
+          ownerMandi.id,
+        )
+
+        if (!cancelled) {
+          setBookings(mandiBookings)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Failed to load queue data.',
+          )
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
+      }
+    }
+
+    void loadMandis()
+
+    return () => {
+      cancelled = true
+    }
+  }, [user?.id])
+
+  const queue = useMemo<QueueItem[]>(() => {
+    const confirmedBookings = bookings
+      .filter((booking) => booking.status === 'confirmed')
+      .sort((a, b) => {
+        const timeDifference =
+          new Date(a.created_at).getTime() -
+          new Date(b.created_at).getTime()
+
+        if (timeDifference !== 0) {
+          return timeDifference
+        }
+
+        return a.id - b.id
+      })
+
+    const firstWaitingId =
+      confirmedBookings[0]?.id ?? null
+
+    return bookings
+      .slice()
+      .sort((a, b) => {
+        const statusOrder: Record<string, number> = {
+          in_progress: 0,
+          confirmed: 1,
+          completed: 2,
+        }
+
+        const statusDifference =
+          (statusOrder[a.status] ?? 3) -
+          (statusOrder[b.status] ?? 3)
+
+        if (statusDifference !== 0) {
+          return statusDifference
+        }
+
+        return (
+          new Date(a.created_at).getTime() -
+          new Date(b.created_at).getTime()
+        )
+      })
+      .map((booking, index) => ({
+        id: booking.id,
+        position: index + 1,
+        farmerName: booking.farmer_name,
+        farmerId: booking.farmer_id,
+        crop: booking.crop_type,
+        quantity: booking.quantity,
+        vehicle: booking.vehicle_number,
+        bookingCode: booking.booking_code,
+        slotDate: booking.slot_date,
+        startTime: booking.start_time,
+        endTime: booking.end_time,
+        bookingSource: booking.booking_source,
+        status: getQueueStatus(
+          booking,
+          firstWaitingId,
+        ),
+      }))
+  }, [bookings])
 
   const activeQueue = queue.filter(
     (item) => item.status !== 'completed',
@@ -183,45 +241,95 @@ function QueueManagementPage() {
 
   const nextItem =
     queue.find((item) => item.status === 'next') ??
-    queue.find((item) => item.status === 'waiting') ??
     null
 
   const filteredQueue = useMemo(() => {
+    const query = search.toLowerCase().trim()
+
     return queue.filter((item) => {
       const matchesFilter =
         filter === 'all' ? true : item.status === filter
-
-      const query = search.toLowerCase().trim()
 
       const matchesSearch =
         !query ||
         item.farmerName.toLowerCase().includes(query) ||
         item.vehicle.toLowerCase().includes(query) ||
-        item.crop.toLowerCase().includes(query)
+        item.crop.toLowerCase().includes(query) ||
+        item.bookingCode.toLowerCase().includes(query)
 
       return matchesFilter && matchesSearch
     })
   }, [queue, search, filter])
 
-  const handleProcessNext = () => {
-    const target =
-      queue.find((item) => item.status === 'next') ??
-      queue.find((item) => item.status === 'waiting')
+  async function handleStartProcessing(id: number) {
+    try {
+      setActionId(id)
+      setError('')
 
-    if (target) {
-      markInProgress(target.id)
+      const updatedBooking =
+        await startBookingProcessing(id)
+
+      setBookings((current) =>
+        current.map((booking) =>
+          booking.id === id
+            ? updatedBooking
+            : booking,
+        ),
+      )
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to start processing.',
+      )
+    } finally {
+      setActionId(null)
     }
+  }
+
+  async function handleCompleteProcessing(id: number) {
+    try {
+      setActionId(id)
+      setError('')
+
+      const updatedBooking =
+        await completeBookingProcessing(id)
+
+      setBookings((current) => {
+        const updated = current.map((booking) =>
+          booking.id === id
+            ? updatedBooking
+            : booking,
+        )
+
+        return updated
+      })
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Failed to complete processing.',
+      )
+    } finally {
+      setActionId(null)
+    }
+  }
+
+  async function handleProcessNext() {
+    if (!nextItem) {
+      return
+    }
+
+    await handleStartProcessing(nextItem.id)
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 via-white to-slate-50">
-      {/* Header */}
       <div className="bg-white border-b border-green-100">
         <div className="px-4 py-6 mx-auto max-w-7xl sm:px-6 lg:px-8">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 mb-3 text-xs font-semibold tracking-wide text-green-800 uppercase border border-green-200 rounded-full bg-green-50">
-                <span>🚦</span>
                 Mandi Queue Operations
               </div>
 
@@ -230,14 +338,20 @@ function QueueManagementPage() {
               </h1>
 
               <p className="max-w-2xl mt-2 text-sm leading-6 text-slate-500">
-                Monitor farmer arrivals, control processing order and keep the
-                procurement queue moving efficiently.
+                Monitor real farmer bookings and control
+                the processing order at your mandi.
               </p>
+
+              {selectedMandi && (
+                <p className="mt-2 text-xs font-semibold text-green-700">
+                  Mandi: {selectedMandi.name}
+                </p>
+              )}
             </div>
 
             <div className="flex items-center gap-3 p-4 bg-white border shadow-sm rounded-2xl border-slate-200">
-              <div className="flex items-center justify-center text-lg w-11 h-11 rounded-xl bg-green-50">
-                🏪
+              <div className="flex items-center justify-center w-11 h-11 rounded-xl bg-green-50">
+                <span className="w-2.5 h-2.5 bg-green-500 rounded-full" />
               </div>
 
               <div>
@@ -245,12 +359,11 @@ function QueueManagementPage() {
                   Centre Status
                 </p>
 
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="w-2.5 h-2.5 bg-green-500 rounded-full" />
-                  <p className="text-sm font-bold text-green-700">
-                    Gate Operational
-                  </p>
-                </div>
+                <p className="mt-1 text-sm font-bold text-green-700">
+                  {selectedMandi
+                    ? 'Gate Operational'
+                    : 'Mandi Unavailable'}
+                </p>
               </div>
             </div>
           </div>
@@ -258,124 +371,92 @@ function QueueManagementPage() {
       </div>
 
       <main className="px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        {/* KPI cards */}
+        {error && (
+          <div className="p-4 mb-6 text-sm font-medium text-red-700 border border-red-200 rounded-xl bg-red-50">
+            {error}
+          </div>
+        )}
+
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <div className="p-5 bg-white border border-green-100 shadow-sm rounded-2xl">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold tracking-wide text-green-600 uppercase">
-                  Active Queue
-                </p>
+            <p className="text-xs font-semibold tracking-wide text-green-600 uppercase">
+              Active Queue
+            </p>
 
-                <p className="mt-2 text-3xl font-bold text-green-800">
-                  {activeQueue.length}
-                </p>
+            <p className="mt-2 text-3xl font-bold text-green-800">
+              {activeQueue.length}
+            </p>
 
-                <p className="mt-1 text-xs text-slate-500">
-                  Farmers awaiting completion
-                </p>
-              </div>
-
-              <div className="flex items-center justify-center text-lg w-11 h-11 rounded-xl bg-green-50">
-                👨‍🌾
-              </div>
-            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Real active bookings
+            </p>
           </div>
 
           <div className="p-5 bg-white border shadow-sm rounded-2xl border-amber-100">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold tracking-wide uppercase text-amber-600">
-                  Waiting
-                </p>
+            <p className="text-xs font-semibold tracking-wide uppercase text-amber-600">
+              Waiting
+            </p>
 
-                <p className="mt-2 text-3xl font-bold text-amber-800">
-                  {waitingCount}
-                </p>
+            <p className="mt-2 text-3xl font-bold text-amber-800">
+              {waitingCount +
+                (nextItem ? 1 : 0)}
+            </p>
 
-                <p className="mt-1 text-xs text-slate-500">
-                  In waiting state
-                </p>
-              </div>
-
-              <div className="flex items-center justify-center text-lg w-11 h-11 rounded-xl bg-amber-50">
-                ⏳
-              </div>
-            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Confirmed bookings
+            </p>
           </div>
 
           <div className="p-5 bg-white border border-blue-100 shadow-sm rounded-2xl">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold tracking-wide text-blue-600 uppercase">
-                  Processing
-                </p>
+            <p className="text-xs font-semibold tracking-wide text-blue-600 uppercase">
+              Processing
+            </p>
 
-                <p className="mt-2 text-3xl font-bold text-blue-800">
-                  {processingCount}
-                </p>
+            <p className="mt-2 text-3xl font-bold text-blue-800">
+              {processingCount}
+            </p>
 
-                <p className="mt-1 text-xs text-slate-500">
-                  Currently being handled
-                </p>
-              </div>
-
-              <div className="flex items-center justify-center text-lg w-11 h-11 rounded-xl bg-blue-50">
-                ⚙️
-              </div>
-            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Currently processing
+            </p>
           </div>
 
           <div className="p-5 bg-white border shadow-sm rounded-2xl border-slate-200">
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="text-xs font-semibold tracking-wide uppercase text-slate-500">
-                  Completed
-                </p>
+            <p className="text-xs font-semibold tracking-wide uppercase text-slate-500">
+              Completed
+            </p>
 
-                <p className="mt-2 text-3xl font-bold text-slate-900">
-                  {completedCount}
-                </p>
+            <p className="mt-2 text-3xl font-bold text-slate-900">
+              {completedCount}
+            </p>
 
-                <p className="mt-1 text-xs text-slate-500">
-                  Processed today
-                </p>
-              </div>
-
-              <div className="flex items-center justify-center text-lg w-11 h-11 rounded-xl bg-slate-100">
-                ✓
-              </div>
-            </div>
+            <p className="mt-1 text-xs text-slate-500">
+              Completed bookings
+            </p>
           </div>
         </div>
 
-        {/* Priority panel */}
         <div className="grid gap-6 mt-6 lg:grid-cols-[1.5fr_0.8fr]">
           <section className="overflow-hidden bg-white border border-green-200 shadow-sm rounded-2xl">
             <div className="px-6 py-5 border-b border-green-100 bg-green-50/70">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
-                    Priority Queue
-                  </p>
+              <p className="text-xs font-semibold tracking-widest text-green-700 uppercase">
+                Priority Queue
+              </p>
 
-                  <h2 className="mt-1 text-xl font-bold text-slate-900">
-                    Next Farmer to Process
-                  </h2>
-                </div>
-
-                <span className="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-green-700 border border-green-200 rounded-full bg-white">
-                  <span className="w-2 h-2 bg-green-500 rounded-full" />
-                  Position #1
-                </span>
-              </div>
+              <h2 className="mt-1 text-xl font-bold text-slate-900">
+                Next Farmer to Process
+              </h2>
             </div>
 
-            {nextItem ? (
+            {loading ? (
+              <div className="p-10 text-sm text-center text-slate-500">
+                Loading live queue...
+              </div>
+            ) : nextItem ? (
               <div className="p-6">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                  <div className="flex items-center justify-center flex-shrink-0 w-20 h-20 text-4xl rounded-2xl bg-green-50">
-                    {CROP_ICONS[nextItem.crop] ?? '🌾'}
+                  <div className="flex items-center justify-center flex-shrink-0 w-20 h-20 text-2xl font-bold text-green-700 rounded-2xl bg-green-50">
+                    #{nextItem.position}
                   </div>
 
                   <div className="flex-1">
@@ -384,88 +465,61 @@ function QueueManagementPage() {
                         {nextItem.farmerName}
                       </h3>
 
-                      <span
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold border rounded-full ${
-                          STATUS_META[nextItem.status].className
-                        }`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${
-                            STATUS_META[nextItem.status].dot
-                          }`}
-                        />
-                        {STATUS_META[nextItem.status].label}
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold border rounded-full bg-green-50 text-green-700 border-green-200">
+                        <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />
+                        Next
                       </span>
                     </div>
 
                     <p className="mt-2 text-sm text-slate-500">
-                      {nextItem.crop} • {nextItem.quantity}
+                      Farmer ID: {nextItem.farmerId} •{' '}
+                      {nextItem.crop} •{' '}
+                      {nextItem.quantity} units
                     </p>
 
                     <div className="flex flex-wrap gap-3 mt-3">
                       <span className="px-3 py-1.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg">
-                        🚜 {nextItem.vehicle}
+                        {nextItem.vehicle}
                       </span>
 
                       <span className="px-3 py-1.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg">
-                        🕐 Arrived {nextItem.arrivalTime}
-                      </span>
-
-                      <span className="px-3 py-1.5 text-xs font-semibold bg-slate-50 border border-slate-200 rounded-lg">
-                        ⏱️ Wait {nextItem.estimatedWait}
+                        {nextItem.bookingCode}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2 sm:min-w-[150px]">
-                    {nextItem.status === 'next' && (
-                      <button
-                        type="button"
-                        onClick={() => markInProgress(nextItem.id)}
-                        className="px-5 py-3 text-sm font-semibold text-white transition-all bg-blue-600 rounded-xl hover:bg-blue-700"
-                      >
-                        Start Processing
-                      </button>
-                    )}
-
-                    {nextItem.status === 'in-progress' && (
-                      <button
-                        type="button"
-                        onClick={() => markCompleted(nextItem.id)}
-                        className="px-5 py-3 text-sm font-semibold text-white transition-all bg-green-700 rounded-xl hover:bg-green-800"
-                      >
-                        ✓ Mark Done
-                      </button>
-                    )}
-
+                  <div className="flex flex-col gap-2 sm:min-w-[170px]">
                     <button
                       type="button"
-                      onClick={() => removeFromQueue(nextItem.id)}
-                      className="px-5 py-2.5 text-xs font-semibold text-red-600 transition-colors border border-red-100 rounded-xl hover:bg-red-50"
+                      onClick={() =>
+                        void handleStartProcessing(
+                          nextItem.id,
+                        )
+                      }
+                      disabled={actionId === nextItem.id}
+                      className="px-5 py-3 text-sm font-semibold text-white transition-all bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50"
                     >
-                      Remove from Queue
+                      {actionId === nextItem.id
+                        ? 'Starting...'
+                        : 'Start Processing'}
                     </button>
                   </div>
                 </div>
               </div>
             ) : (
               <div className="p-10 text-center">
-                <div className="flex items-center justify-center w-16 h-16 mx-auto text-3xl rounded-2xl bg-green-50">
-                  🎉
-                </div>
-
-                <h3 className="mt-4 text-lg font-bold text-slate-900">
-                  Queue is clear
+                <h3 className="text-lg font-bold text-slate-900">
+                  No confirmed booking is waiting
                 </h3>
 
                 <p className="mt-1 text-sm text-slate-500">
-                  There are no farmers waiting for processing.
+                  The live queue has no next farmer to
+                  process.
                 </p>
               </div>
             )}
           </section>
 
-          {/* Quick operations */}
           <section className="p-6 bg-white border shadow-sm rounded-2xl border-slate-200">
             <p className="text-xs font-semibold tracking-widest text-blue-700 uppercase">
               Quick Operations
@@ -475,79 +529,53 @@ function QueueManagementPage() {
               Queue Controls
             </h2>
 
-            <div className="mt-5 space-y-3">
-              <button
-                type="button"
-                onClick={handleProcessNext}
-                disabled={!nextItem}
-                className="w-full p-4 text-left transition-all border border-blue-100 rounded-xl bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 text-lg bg-white rounded-xl">
-                    ▶
-                  </div>
+            <button
+              type="button"
+              onClick={() => void handleProcessNext()}
+              disabled={
+                !nextItem ||
+                actionId !== null
+              }
+              className="w-full p-4 mt-5 text-left transition-all border border-blue-100 rounded-xl bg-blue-50 hover:bg-blue-100 disabled:opacity-50"
+            >
+              <p className="text-sm font-bold text-blue-900">
+                Process Next Farmer
+              </p>
 
-                  <div>
-                    <p className="text-sm font-bold text-blue-900">
-                      Process Next Farmer
-                    </p>
+              <p className="mt-1 text-xs text-blue-700">
+                Start the first confirmed booking in the
+                live queue.
+              </p>
+            </button>
 
-                    <p className="mt-1 text-xs text-blue-700">
-                      Move the next queue record into processing.
-                    </p>
-                  </div>
-                </div>
-              </button>
+            <div className="p-4 mt-3 border border-green-100 rounded-xl bg-green-50">
+              <p className="text-sm font-bold text-green-900">
+                Queue Processing Active
+              </p>
 
-              <div className="p-4 border rounded-xl border-amber-100 bg-amber-50">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 text-lg bg-white rounded-xl">
-                    ⏱️
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-bold text-amber-900">
-                      Current Wait Time
-                    </p>
-
-                    <p className="mt-1 text-xs text-amber-700">
-                      Estimated average: <strong>35 minutes</strong>
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-4 border border-green-100 rounded-xl bg-green-50">
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 text-lg bg-white rounded-xl">
-                    ✓
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-bold text-green-900">
-                      Queue Processing Active
-                    </p>
-
-                    <p className="mt-1 text-xs text-green-700">
-                      Gate operations are running normally.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <p className="mt-1 text-xs text-green-700">
+                Status is synchronized with booking
+                processing.
+              </p>
             </div>
           </section>
         </div>
 
-        {/* Filters */}
         <section className="p-4 mt-6 bg-white border shadow-sm rounded-2xl border-slate-200">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div className="flex flex-wrap gap-2">
               {[
-                { id: 'all', label: 'All', count: queue.length },
+                {
+                  id: 'all',
+                  label: 'All',
+                  count: queue.length,
+                },
                 {
                   id: 'next',
                   label: 'Next',
-                  count: queue.filter((q) => q.status === 'next').length,
+                  count: queue.filter(
+                    (q) => q.status === 'next',
+                  ).length,
                 },
                 {
                   id: 'waiting',
@@ -570,7 +598,9 @@ function QueueManagementPage() {
                   type="button"
                   onClick={() =>
                     setFilter(
-                      item.id as 'all' | QueueItem['status'],
+                      item.id as
+                        | 'all'
+                        | QueueStatus,
                     )
                   }
                   className={`px-4 py-2.5 text-sm font-semibold rounded-xl transition-all ${
@@ -580,6 +610,7 @@ function QueueManagementPage() {
                   }`}
                 >
                   {item.label}
+
                   <span
                     className={`ml-2 text-xs ${
                       filter === item.id
@@ -594,22 +625,19 @@ function QueueManagementPage() {
             </div>
 
             <div className="relative lg:w-80">
-              <span className="absolute -translate-y-1/2 left-3 top-1/2">
-                🔎
-              </span>
-
               <input
                 type="text"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search farmer, crop or vehicle"
-                className="w-full py-2.5 pl-10 pr-4 text-sm border rounded-xl border-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500"
+                onChange={(event) =>
+                  setSearch(event.target.value)
+                }
+                placeholder="Search farmer, crop, vehicle or booking"
+                className="w-full py-2.5 px-4 text-sm border rounded-xl border-slate-200 focus:outline-none focus:ring-2 focus:ring-green-500"
               />
             </div>
           </div>
         </section>
 
-        {/* Queue timeline */}
         <section className="mt-6">
           <div className="flex items-end justify-between mb-4">
             <div>
@@ -628,27 +656,28 @@ function QueueManagementPage() {
             </span>
           </div>
 
-          {filteredQueue.length === 0 ? (
+          {loading ? (
             <div className="p-12 text-center bg-white border shadow-sm rounded-2xl border-slate-200">
-              <div className="flex items-center justify-center w-16 h-16 mx-auto text-3xl rounded-2xl bg-slate-100">
-                🔎
-              </div>
-
-              <h3 className="mt-4 font-bold text-slate-900">
+              <p className="text-sm text-slate-500">
+                Loading live queue...
+              </p>
+            </div>
+          ) : filteredQueue.length === 0 ? (
+            <div className="p-12 text-center bg-white border shadow-sm rounded-2xl border-slate-200">
+              <h3 className="font-bold text-slate-900">
                 No matching records
               </h3>
 
               <p className="mt-1 text-sm text-slate-500">
-                Try changing the search or status filter.
+                There are no bookings matching the current
+                search or status filter.
               </p>
             </div>
           ) : (
-            <div className="relative space-y-4">
-              {/* Timeline line */}
-              <div className="absolute left-[27px] top-8 bottom-8 hidden w-0.5 bg-slate-200 md:block" />
-
+            <div className="space-y-4">
               {filteredQueue.map((item) => {
-                const status = STATUS_META[item.status]
+                const status =
+                  STATUS_META[item.status]
 
                 return (
                   <div
@@ -663,39 +692,30 @@ function QueueManagementPage() {
                   >
                     <div className="p-5 md:p-6">
                       <div className="flex flex-col gap-5 md:flex-row md:items-center">
-                        {/* Position */}
-                        <div className="relative z-10 flex items-center gap-3 md:w-36">
+                        <div className="flex items-center gap-3 md:w-36">
                           <div
                             className={`flex items-center justify-center flex-shrink-0 w-14 h-14 text-lg font-bold border-2 rounded-2xl ${
-                              item.status === 'completed'
+                              item.status ===
+                              'completed'
                                 ? 'bg-slate-50 border-slate-200 text-slate-400'
-                                : item.status === 'in-progress'
+                                : item.status ===
+                                    'in-progress'
                                   ? 'bg-blue-50 border-blue-300 text-blue-700'
-                                  : item.status === 'next'
+                                  : item.status ===
+                                      'next'
                                     ? 'bg-green-50 border-green-300 text-green-700'
                                     : 'bg-amber-50 border-amber-200 text-amber-700'
                             }`}
                           >
-                            {item.status === 'completed'
+                            {item.status ===
+                            'completed'
                               ? '✓'
                               : `#${item.position}`}
                           </div>
-
-                          <div className="md:hidden">
-                            <span
-                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold border rounded-full ${status.className}`}
-                            >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${status.dot}`}
-                              />
-                              {status.label}
-                            </span>
-                          </div>
                         </div>
 
-                        {/* Farmer info */}
                         <div className="flex-1 min-w-0">
-                          <div className="hidden mb-2 md:block">
+                          <div className="mb-2">
                             <span
                               className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold border rounded-full ${status.className}`}
                             >
@@ -711,22 +731,19 @@ function QueueManagementPage() {
                               {item.farmerName}
                             </h3>
 
-                            <span className="text-xl">
-                              {CROP_ICONS[item.crop] ?? '🌾'}
-                            </span>
-
                             <span className="text-sm font-semibold text-slate-600">
                               {item.crop}
                             </span>
                           </div>
 
-                          <div className="grid grid-cols-1 gap-2 mt-3 text-xs sm:grid-cols-2 lg:grid-cols-4">
+                          <div className="grid grid-cols-1 gap-2 mt-3 text-xs sm:grid-cols-2 lg:grid-cols-5">
                             <div className="p-2.5 rounded-lg bg-slate-50">
                               <p className="text-[10px] font-semibold text-slate-400 uppercase">
                                 Quantity
                               </p>
+
                               <p className="mt-1 font-semibold text-slate-800">
-                                📦 {item.quantity}
+                                {item.quantity}
                               </p>
                             </div>
 
@@ -734,64 +751,92 @@ function QueueManagementPage() {
                               <p className="text-[10px] font-semibold text-slate-400 uppercase">
                                 Vehicle
                               </p>
+
                               <p className="mt-1 font-mono font-semibold text-slate-800">
-                                🚜 {item.vehicle}
+                                {item.vehicle}
                               </p>
                             </div>
 
                             <div className="p-2.5 rounded-lg bg-slate-50">
                               <p className="text-[10px] font-semibold text-slate-400 uppercase">
-                                Arrival
+                                Booking
                               </p>
+
                               <p className="mt-1 font-semibold text-slate-800">
-                                🕐 {item.arrivalTime}
+                                {item.bookingCode}
                               </p>
                             </div>
 
                             <div className="p-2.5 rounded-lg bg-slate-50">
                               <p className="text-[10px] font-semibold text-slate-400 uppercase">
-                                Est. Wait
+                                Slot
                               </p>
+
                               <p className="mt-1 font-semibold text-slate-800">
-                                ⏱️ {item.estimatedWait}
+                                {formatTime(
+                                  item.startTime,
+                                )}{' '}
+                                -{' '}
+                                {formatTime(
+                                  item.endTime,
+                                )}
+                              </p>
+                            </div>
+
+                            <div className="p-2.5 rounded-lg bg-slate-50">
+                              <p className="text-[10px] font-semibold text-slate-400 uppercase">
+                                Source
+                              </p>
+
+                              <p className="mt-1 font-semibold text-slate-800">
+                                {item.bookingSource}
                               </p>
                             </div>
                           </div>
                         </div>
 
-                        {/* Actions */}
                         <div className="flex flex-col gap-2 md:w-40">
                           {item.status === 'next' && (
                             <button
                               type="button"
-                              onClick={() => markInProgress(item.id)}
-                              className="w-full px-4 py-3 text-sm font-semibold text-white transition-all bg-blue-600 rounded-xl hover:bg-blue-700"
+                              onClick={() =>
+                                void handleStartProcessing(
+                                  item.id,
+                                )
+                              }
+                              disabled={
+                                actionId === item.id
+                              }
+                              className="w-full px-4 py-3 text-sm font-semibold text-white transition-all bg-blue-600 rounded-xl hover:bg-blue-700 disabled:opacity-50"
                             >
-                              ▶ Start Processing
+                              {actionId === item.id
+                                ? 'Starting...'
+                                : 'Start Processing'}
                             </button>
                           )}
 
-                          {item.status === 'in-progress' && (
+                          {item.status ===
+                            'in-progress' && (
                             <button
                               type="button"
-                              onClick={() => markCompleted(item.id)}
-                              className="w-full px-4 py-3 text-sm font-semibold text-white transition-all bg-green-700 rounded-xl hover:bg-green-800"
+                              onClick={() =>
+                                void handleCompleteProcessing(
+                                  item.id,
+                                )
+                              }
+                              disabled={
+                                actionId === item.id
+                              }
+                              className="w-full px-4 py-3 text-sm font-semibold text-white transition-all bg-green-700 rounded-xl hover:bg-green-800 disabled:opacity-50"
                             >
-                              ✓ Mark Done
+                              {actionId === item.id
+                                ? 'Completing...'
+                                : 'Mark Done'}
                             </button>
                           )}
 
-                          {item.status !== 'completed' && (
-                            <button
-                              type="button"
-                              onClick={() => removeFromQueue(item.id)}
-                              className="w-full px-4 py-2.5 text-xs font-semibold text-red-600 transition-colors border border-red-100 rounded-xl hover:bg-red-50"
-                            >
-                              Remove
-                            </button>
-                          )}
-
-                          {item.status === 'completed' && (
+                          {item.status ===
+                            'completed' && (
                             <div className="px-4 py-3 text-sm font-semibold text-center border text-slate-500 rounded-xl border-slate-200 bg-slate-50">
                               ✓ Processed
                             </div>
@@ -806,7 +851,6 @@ function QueueManagementPage() {
           )}
         </section>
 
-        {/* Bottom info */}
         <div className="grid gap-4 mt-6 sm:grid-cols-3">
           <div className="p-5 border border-green-100 rounded-2xl bg-green-50">
             <p className="text-xs font-semibold tracking-wide text-green-700 uppercase">
@@ -814,11 +858,13 @@ function QueueManagementPage() {
             </p>
 
             <p className="mt-2 text-xl font-bold text-green-900">
-              Stable
+              {activeQueue.length > 0
+                ? 'Active'
+                : 'Clear'}
             </p>
 
             <p className="mt-1 text-xs text-green-700">
-              Active farmer flow is within current capacity.
+              Based on current booking states.
             </p>
           </div>
 
@@ -828,25 +874,28 @@ function QueueManagementPage() {
             </p>
 
             <p className="mt-2 text-xl font-bold text-blue-900">
-              {processingCount > 0 ? 'In Progress' : 'Ready'}
+              {processingCount > 0
+                ? 'In Progress'
+                : 'Ready'}
             </p>
 
             <p className="mt-1 text-xs text-blue-700">
-              {processingCount} farmer currently under processing.
+              {processingCount} booking currently
+              processing.
             </p>
           </div>
 
           <div className="p-5 border rounded-2xl border-amber-100 bg-amber-50">
             <p className="text-xs font-semibold tracking-wide uppercase text-amber-700">
-              Average Wait
+              Queue Source
             </p>
 
             <p className="mt-2 text-xl font-bold text-amber-900">
-              35 min
+              Live Bookings
             </p>
 
             <p className="mt-1 text-xs text-amber-700">
-              Queue is being monitored continuously.
+              Queue records come directly from the backend.
             </p>
           </div>
         </div>

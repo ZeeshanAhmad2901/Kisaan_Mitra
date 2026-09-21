@@ -1,27 +1,29 @@
 import { QRCodeSVG } from 'qrcode.react'
-import { useEffect, useState } from 'react'
-import { Link } from 'react-router'
+import { Link, useLocation } from 'react-router'
 
-type Booking = {
-  id: string
-  mandiName: string
-  date: string
-  time: string
-  crop: string
-  quantity: string
+import type { BackendMandi } from '../../api/mandiApi'
+import type { BackendSlot } from '../../api/slotApi'
+import type { BackendVehicle } from '../../api/vehicleApi'
+
+interface BookingResponse {
+  id: number
+  booking_code: string
+  farmer_id: number
+  mandi_id: number
+  slot_id: number
+  vehicle_id: number
+  crop_type: string
+  quantity: number
   status: string
-  vehicleNumber: string
+  created_at: string
 }
 
-const FALLBACK_BOOKING: Booking = {
-  id: 'KM-2025-00847',
-  mandiName: 'Azadpur Mandi',
-  date: '2025-09-01',
-  time: '6:00 AM - 8:00 AM',
-  crop: 'Wheat',
-  quantity: '10 quintal',
-  status: 'confirmed',
-  vehicleNumber: 'UP-32-AB-1234',
+interface BookingSuccessState {
+  bookingId: string
+  booking: BookingResponse
+  mandi?: BackendMandi
+  slot?: BackendSlot
+  vehicle?: BackendVehicle
 }
 
 const formatDate = (date: string) => {
@@ -38,59 +40,77 @@ const formatDate = (date: string) => {
   })
 }
 
+const formatTime = (time: string) => {
+  const [hours, minutes] = time.split(':').map(Number)
+
+  if (
+    !Number.isFinite(hours) ||
+    !Number.isFinite(minutes)
+  ) {
+    return time
+  }
+
+  const date = new Date()
+  date.setHours(hours, minutes, 0, 0)
+
+  return date.toLocaleTimeString('en-IN', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
 function BookingSuccessPage() {
-  const [booking, setBooking] = useState<Booking>(FALLBACK_BOOKING)
+  const location = useLocation()
 
-  useEffect(() => {
-    try {
-      const storedBookings = localStorage.getItem('kisaan_mitra_bookings')
+  const state = location.state as BookingSuccessState | null
+  const booking = state?.booking
 
-      if (!storedBookings) return
+  if (!booking) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <div className="max-w-2xl px-4 py-20 mx-auto text-center">
+          <div className="p-8 bg-white border border-gray-200 shadow-sm rounded-3xl">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-5 text-2xl bg-orange-100 rounded-full">
+              !
+            </div>
 
-      const parsedBookings = JSON.parse(storedBookings)
+            <h1 className="text-2xl font-bold text-gray-900">
+              Booking details unavailable
+            </h1>
 
-      if (!Array.isArray(parsedBookings) || parsedBookings.length === 0) {
-        return
-      }
+            <p className="mt-3 text-sm leading-6 text-gray-500">
+              This booking confirmation page was opened without
+              booking information. Please create a booking first.
+            </p>
 
-      const latestBooking = parsedBookings[0]
+            <Link
+              to="/farmer/book-slot"
+              className="inline-flex items-center justify-center px-6 py-3 mt-6 text-sm font-bold text-white transition bg-green-700 rounded-xl hover:bg-green-800"
+            >
+              Book a Mandi Slot
+            </Link>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
-      if (
-        latestBooking &&
-        typeof latestBooking === 'object'
-      ) {
-        setBooking({
-          id: latestBooking.id ?? FALLBACK_BOOKING.id,
-          mandiName:
-            latestBooking.mandiName ??
-            FALLBACK_BOOKING.mandiName,
-          date: latestBooking.date ?? FALLBACK_BOOKING.date,
-          time: latestBooking.time ?? FALLBACK_BOOKING.time,
-          crop: latestBooking.crop ?? FALLBACK_BOOKING.crop,
-          quantity:
-            latestBooking.quantity ??
-            FALLBACK_BOOKING.quantity,
-          status:
-            latestBooking.status ??
-            FALLBACK_BOOKING.status,
-          vehicleNumber:
-            latestBooking.vehicleNumber ??
-            FALLBACK_BOOKING.vehicleNumber,
-        })
-      }
-    } catch {
-      setBooking(FALLBACK_BOOKING)
-    }
-  }, [])
+  const mandi = state?.mandi
+  const slot = state?.slot
+  const vehicle = state?.vehicle
+
+  const bookingId = state?.bookingId || booking.booking_code
 
   const qrValue = JSON.stringify({
-    bookingId: booking.id,
-    mandi: booking.mandiName,
-    date: booking.date,
-    time: booking.time,
-    crop: booking.crop,
+    bookingId: booking.booking_code,
+    bookingDatabaseId: booking.id,
+    farmerId: booking.farmer_id,
+    mandiId: booking.mandi_id,
+    slotId: booking.slot_id,
+    vehicleId: booking.vehicle_id,
+    crop: booking.crop_type,
     quantity: booking.quantity,
-    vehicle: booking.vehicleNumber,
+    status: booking.status,
   })
 
   return (
@@ -107,6 +127,7 @@ function BookingSuccessPage() {
               <p className="text-sm font-bold text-white">
                 Government Digital Agriculture Service
               </p>
+
               <p className="text-xs text-green-100">
                 Kisaan Mitra • Mandi Procurement Management
               </p>
@@ -119,7 +140,7 @@ function BookingSuccessPage() {
         {/* Success Header */}
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center w-20 h-20 mx-auto mb-5 bg-green-100 rounded-full">
-            <span className="text-4xl">✓</span>
+            <span className="text-4xl text-green-700">✓</span>
           </div>
 
           <p className="mb-2 text-sm font-bold tracking-wider text-green-700 uppercase">
@@ -147,16 +168,23 @@ function BookingSuccessPage() {
                 </p>
 
                 <h2 className="mt-1 text-2xl font-bold text-white">
-                  {booking.mandiName}
+                  {mandi?.name ?? `Mandi #${booking.mandi_id}`}
                 </h2>
+
+                {mandi?.location && (
+                  <p className="mt-1 text-sm text-green-100">
+                    {mandi.location}
+                  </p>
+                )}
               </div>
 
               <div className="px-4 py-2 bg-white rounded-xl">
                 <p className="text-xs font-medium text-gray-500">
                   Booking ID
                 </p>
+
                 <p className="font-bold text-green-700">
-                  {booking.id}
+                  {bookingId}
                 </p>
               </div>
             </div>
@@ -168,8 +196,11 @@ function BookingSuccessPage() {
               <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Visit Date
               </p>
+
               <p className="mt-2 font-bold text-gray-900">
-                {formatDate(booking.date)}
+                {slot
+                  ? formatDate(slot.slot_date)
+                  : 'Not available'}
               </p>
             </div>
 
@@ -177,8 +208,11 @@ function BookingSuccessPage() {
               <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Time Slot
               </p>
+
               <p className="mt-2 font-bold text-gray-900">
-                {booking.time}
+                {slot
+                  ? `${formatTime(slot.start_time)} - ${formatTime(slot.end_time)}`
+                  : 'Not available'}
               </p>
             </div>
 
@@ -186,8 +220,9 @@ function BookingSuccessPage() {
               <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Crop
               </p>
+
               <p className="mt-2 font-bold text-gray-900">
-                🌾 {booking.crop}
+                🌾 {booking.crop_type}
               </p>
             </div>
 
@@ -195,8 +230,9 @@ function BookingSuccessPage() {
               <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Quantity
               </p>
+
               <p className="mt-2 font-bold text-gray-900">
-                {booking.quantity}
+                {booking.quantity} quintal
               </p>
             </div>
 
@@ -204,9 +240,17 @@ function BookingSuccessPage() {
               <p className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
                 Vehicle Number
               </p>
+
               <p className="mt-2 font-bold text-gray-900">
-                {booking.vehicleNumber || 'Not provided'}
+                {vehicle?.vehicle_number ??
+                  `Vehicle #${booking.vehicle_id}`}
               </p>
+
+              {vehicle?.vehicle_type && (
+                <p className="mt-1 text-xs text-gray-500">
+                  {vehicle.vehicle_type}
+                </p>
+              )}
             </div>
 
             <div className="p-4 border border-gray-100 rounded-2xl bg-gray-50">
@@ -216,7 +260,7 @@ function BookingSuccessPage() {
 
               <div className="mt-2">
                 <span className="inline-flex px-3 py-1 text-xs font-bold text-green-700 capitalize bg-green-100 border border-green-200 rounded-full">
-                  {booking.status}
+                  {booking.status.replace('_', ' ')}
                 </span>
               </div>
             </div>
@@ -254,8 +298,9 @@ function BookingSuccessPage() {
                   <p className="text-xs text-gray-500">
                     Booking Reference
                   </p>
+
                   <p className="mt-1 font-bold text-green-700">
-                    {booking.id}
+                    {booking.booking_code}
                   </p>
                 </div>
               </div>
@@ -277,12 +322,15 @@ function BookingSuccessPage() {
                     <li>
                       Arrive during your selected time slot.
                     </li>
+
                     <li>
                       Keep your booking QR code available at entry.
                     </li>
+
                     <li>
                       Carry the required farmer and vehicle documents.
                     </li>
+
                     <li>
                       Follow the mandi queue instructions after verification.
                     </li>

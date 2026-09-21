@@ -1,50 +1,36 @@
-import type { Vehicle } from '../types'
+import apiClient from './client'
 
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
-
-const MOCK_VEHICLES: Vehicle[] = [
-  {
-    id: '1',
-    farmerId: '1',
-    vehicleType: 'tractor',
-    vehicleNumber: 'UP-32-AB-1234',
-    capacity: 10,
-    capacityUnit: 'quintal',
-    isDefault: true,
-  },
-  {
-    id: '2',
-    farmerId: '1',
-    vehicleType: 'truck',
-    vehicleNumber: 'UP-32-CD-5678',
-    capacity: 50,
-    capacityUnit: 'quintal',
-    isDefault: false,
-  },
-]
-
-export async function getVehicles(farmerId: string): Promise<Vehicle[]> {
-  await delay(500)
-  return MOCK_VEHICLES.filter((v) => v.farmerId === farmerId)
+export interface BackendVehicle {
+  id: number
+  farmer_id: number
+  driver_id: number | null
+  vehicle_number: string
+  vehicle_type: string
+  is_active: boolean
 }
 
-export async function addVehicle(
-  vehicle: Omit<Vehicle, 'id' | 'farmerId' | 'isDefault'>
-): Promise<Vehicle> {
-  await delay(800)
-
-  return {
-    ...vehicle,
-    id: String(Date.now()),
-    farmerId: '1',
-    isDefault: MOCK_VEHICLES.length === 0,
-  }
+export interface VehicleCreateRequest {
+  farmer_id: number
+  driver_id?: number | null
+  vehicle_number: string
+  vehicle_type: string
 }
 
-export async function deleteVehicle(_id: string): Promise<void> {
-  await delay(400)
+export async function getMyVehicles(): Promise<BackendVehicle[]> {
+  return apiClient<BackendVehicle[]>('/vehicles/my')
 }
 
-export async function setDefaultVehicle(_id: string): Promise<void> {
-  await delay(300)
+export async function getFarmerVehicles(
+  farmerId: number,
+): Promise<BackendVehicle[]> {
+  return apiClient<BackendVehicle[]>(`/vehicles/farmer/${farmerId}`)
+}
+
+export async function createVehicle(
+  vehicle: VehicleCreateRequest,
+): Promise<BackendVehicle> {
+  return apiClient<BackendVehicle>('/vehicles/', {
+    method: 'POST',
+    body: JSON.stringify(vehicle),
+  })
 }

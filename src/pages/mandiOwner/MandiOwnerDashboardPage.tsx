@@ -1,66 +1,14 @@
 import { useEffect, useMemo, useState } from 'react'
+import {
+  getMandiBookings,
+  type MandiBooking,
+} from '../../api/bookingApi'
+import type { BackendMandi } from '../../api/mandiApi'
 import { getCropPrices, getMandis } from '../../api/mandiApi'
-import type { CropPrice, Mandi } from '../../types'
+import { getSlots, type BackendSlot } from '../../api/slotApi'
+import type { CropPrice } from '../../types'
 import { formatIndianCurrency } from '../../utils/formatters'
 
-const MOCK_TODAY_STATS = {
-  totalFarmers: 47,
-  todayArrivals: 12,
-  todayRevenue: 345000,
-  activeSlots: 8,
-  pendingInQueue: 5,
-  avgWaitTime: '35 min',
-  completedToday: 7,
-  totalProcurement: 184.5,
-}
-
-const MOCK_TODAY_BOOKINGS = [
-  {
-    id: '1',
-    farmerName: 'Rajesh Kumar',
-    crop: 'Wheat',
-    quantity: '10 quintal',
-    vehicle: 'UP-32-AB-1234',
-    time: '6:15 AM',
-    status: 'completed',
-  },
-  {
-    id: '2',
-    farmerName: 'Suresh Yadav',
-    crop: 'Rice',
-    quantity: '25 quintal',
-    vehicle: 'UP-32-EF-9012',
-    time: '6:45 AM',
-    status: 'in-progress',
-  },
-  {
-    id: '3',
-    farmerName: 'Amit Singh',
-    crop: 'Potato',
-    quantity: '50 quintal',
-    vehicle: 'UP-32-GH-3456',
-    time: '7:00 AM',
-    status: 'in-queue',
-  },
-  {
-    id: '4',
-    farmerName: 'Vikram Pal',
-    crop: 'Mustard',
-    quantity: '15 quintal',
-    vehicle: 'UP-32-IJ-7890',
-    time: '7:30 AM',
-    status: 'in-queue',
-  },
-  {
-    id: '5',
-    farmerName: 'Ramesh Kushwaha',
-    crop: 'Onion',
-    quantity: '20 quintal',
-    vehicle: 'UP-32-KL-2345',
-    time: '8:00 AM',
-    status: 'scheduled',
-  },
-]
 
 const STATUS_META: Record<
   string,
@@ -75,18 +23,23 @@ const STATUS_META: Record<
     badge: 'bg-green-50 text-green-700 border-green-200',
     dot: 'bg-green-500',
   },
-  'in-progress': {
+  in_progress: {
     label: 'Processing',
     badge: 'bg-blue-50 text-blue-700 border-blue-200',
     dot: 'bg-blue-500',
   },
-  'in-queue': {
+  confirmed: {
     label: 'In Queue',
     badge: 'bg-amber-50 text-amber-700 border-amber-200',
     dot: 'bg-amber-500',
   },
-  scheduled: {
-    label: 'Scheduled',
+  cancelled: {
+    label: 'Cancelled',
+    badge: 'bg-red-50 text-red-700 border-red-200',
+    dot: 'bg-red-500',
+  },
+  pending: {
+    label: 'Pending',
     badge: 'bg-slate-50 text-slate-600 border-slate-200',
     dot: 'bg-slate-400',
   },
@@ -103,60 +56,58 @@ const CROP_ICONS: Record<string, string> = {
   Maize: '🌽',
 }
 
-const HOURLY_ARRIVALS = [
-  { label: '6 AM', value: 3 },
-  { label: '7 AM', value: 6 },
-  { label: '8 AM', value: 9 },
-  { label: '9 AM', value: 12 },
-  { label: '10 AM', value: 10 },
-  { label: '11 AM', value: 14 },
-  { label: '12 PM', value: 11 },
-  { label: '1 PM', value: 8 },
-]
+function getTodayString() {
+  return new Date().toISOString().split('T')[0]
+}
 
-const WEEKLY_PROCUREMENT = [
-  { day: 'Mon', value: 92 },
-  { day: 'Tue', value: 118 },
-  { day: 'Wed', value: 105 },
-  { day: 'Thu', value: 132 },
-  { day: 'Fri', value: 146 },
-  { day: 'Sat', value: 125 },
-  { day: 'Sun', value: 98 },
-]
+function getDateDaysAgo(days: number) {
+  const date = new Date()
+  date.setDate(date.getDate() - days)
+  return date.toISOString().split('T')[0]
+}
 
-const WAIT_TIME_DATA = [
-  { day: 'Mon', value: 42 },
-  { day: 'Tue', value: 38 },
-  { day: 'Wed', value: 40 },
-  { day: 'Thu', value: 34 },
-  { day: 'Fri', value: 31 },
-  { day: 'Sat', value: 35 },
-  { day: 'Sun', value: 29 },
-]
+function formatSlotTime(booking: MandiBooking) {
+  const start = new Date(
+    `1970-01-01T${booking.start_time}`,
+  ).toLocaleTimeString('en-IN', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 
-const CROP_DISTRIBUTION = [
-  { name: 'Wheat', value: 42, icon: '🌾' },
-  { name: 'Rice', value: 24, icon: '🌾' },
-  { name: 'Potato', value: 16, icon: '🥔' },
-  { name: 'Mustard', value: 11, icon: '🌼' },
-  { name: 'Other', value: 7, icon: '🌱' },
-]
+  const end = new Date(
+    `1970-01-01T${booking.end_time}`,
+  ).toLocaleTimeString('en-IN', {
+    hour: 'numeric',
+    minute: '2-digit',
+  })
 
-const SLOT_UTILIZATION = [
-  { label: '6–8 AM', booked: 18, total: 20 },
-  { label: '8–10 AM', booked: 20, total: 20 },
-  { label: '10–12 PM', booked: 15, total: 20 },
-  { label: '12–2 PM', booked: 11, total: 20 },
-  { label: '2–4 PM', booked: 9, total: 20 },
-]
+  return `${start} - ${end}`
+}
+
+function formatHour(hour: number) {
+  const suffix = hour >= 12 ? 'PM' : 'AM'
+  const displayHour = hour % 12 || 12
+
+  return `${displayHour} ${suffix}`
+}
 
 function MandiOwnerDashboardPage() {
-  const [mandis, setMandis] = useState<Mandi[]>([])
+  const [mandis, setMandis] = useState<BackendMandi[]>([])
   const [prices, setPrices] = useState<CropPrice[]>([])
+  const [bookings, setBookings] = useState<MandiBooking[]>([])
+  const [slots, setSlots] = useState<BackendSlot[]>([])
+
   const [loading, setLoading] = useState(true)
+  const [loadingBookings, setLoadingBookings] = useState(true)
+  const [loadingSlots, setLoadingSlots] = useState(true)
+
+  const [bookingError, setBookingError] = useState('')
+  const [slotError, setSlotError] = useState('')
+
+  const currentMandi = mandis[0]
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchBaseData() {
       try {
         const [mandiData, priceData] = await Promise.all([
           getMandis(),
@@ -165,52 +116,289 @@ function MandiOwnerDashboardPage() {
 
         setMandis(mandiData)
         setPrices(priceData)
+      } catch {
+        setMandis([])
+        setPrices([])
       } finally {
         setLoading(false)
       }
     }
 
-    fetchData()
+    fetchBaseData()
   }, [])
 
-  const currentMandi = mandis[0]
+  useEffect(() => {
+    if (!currentMandi) {
+      setLoadingBookings(false)
+      setLoadingSlots(false)
+      return
+    }
 
-  const arrivalProgress = Math.round(
-    (MOCK_TODAY_STATS.todayArrivals /
-      MOCK_TODAY_STATS.totalFarmers) *
-      100,
+    async function fetchMandiData() {
+      setLoadingBookings(true)
+      setLoadingSlots(true)
+      setBookingError('')
+      setSlotError('')
+
+      const today = getTodayString()
+
+      const [bookingResult, slotResult] = await Promise.allSettled([
+        getMandiBookings(currentMandi.id),
+        getSlots(String(currentMandi.id), today),
+      ])
+
+      if (bookingResult.status === 'fulfilled') {
+        setBookings(bookingResult.value)
+      } else {
+        setBookings([])
+        setBookingError(
+          bookingResult.reason instanceof Error
+            ? bookingResult.reason.message
+            : 'Failed to load mandi bookings.',
+        )
+      }
+
+      if (slotResult.status === 'fulfilled') {
+        setSlots(slotResult.value)
+      } else {
+        setSlots([])
+        setSlotError(
+          slotResult.reason instanceof Error
+            ? slotResult.reason.message
+            : 'Failed to load mandi slots.',
+        )
+      }
+
+      setLoadingBookings(false)
+      setLoadingSlots(false)
+    }
+
+    fetchMandiData()
+  }, [currentMandi])
+
+  const today = getTodayString()
+
+  const todayBookings = useMemo(
+    () =>
+      bookings.filter(
+        (booking) => booking.slot_date === today,
+      ),
+    [bookings, today],
   )
 
-  const completionProgress = Math.round(
-    (MOCK_TODAY_STATS.completedToday /
-      MOCK_TODAY_STATS.todayArrivals) *
-      100,
+  const activeQueue = useMemo(
+    () =>
+      todayBookings.filter(
+        (booking) =>
+          booking.status === 'confirmed' ||
+          booking.status === 'in_progress',
+      ),
+    [todayBookings],
   )
 
-  const queueBookings = MOCK_TODAY_BOOKINGS.filter(
-    (booking) =>
-      booking.status === 'in-queue' || booking.status === 'in-progress',
+  const completedToday = useMemo(
+    () =>
+      todayBookings.filter(
+        (booking) => booking.status === 'completed',
+      ),
+    [todayBookings],
   )
+
+  const cancelledToday = useMemo(
+    () =>
+      todayBookings.filter(
+        (booking) => booking.status === 'cancelled',
+      ),
+    [todayBookings],
+  )
+
+  const procurementToday = useMemo(
+    () =>
+      completedToday.reduce(
+        (total, booking) => total + Number(booking.quantity || 0),
+        0,
+      ),
+    [completedToday],
+  )
+
+  const arrivalProgress =
+    todayBookings.length > 0
+      ? Math.round(
+          ((completedToday.length + activeQueue.length) /
+            todayBookings.length) *
+            100,
+        )
+      : 0
+
+  const completionProgress =
+    todayBookings.length > 0
+      ? Math.round(
+          (completedToday.length / todayBookings.length) * 100,
+        )
+      : 0
 
   const nextBooking = useMemo(
     () =>
-      MOCK_TODAY_BOOKINGS.find(
-        (booking) =>
-          booking.status === 'in-queue' ||
-          booking.status === 'in-progress',
+      todayBookings.find(
+        (booking) => booking.status === 'in_progress',
+      ) ??
+      todayBookings.find(
+        (booking) => booking.status === 'confirmed',
       ),
-    [],
+    [todayBookings],
   )
+
+  const hourlyArrivals = useMemo(() => {
+    const hours = new Map<number, number>()
+
+    todayBookings.forEach((booking) => {
+      const hour = Number(
+        booking.start_time.split(':')[0],
+      )
+
+      if (Number.isFinite(hour)) {
+        hours.set(hour, (hours.get(hour) ?? 0) + 1)
+      }
+    })
+
+    return Array.from({ length: 8 }, (_, index) => {
+      const hour = 6 + index
+
+      return {
+        label: formatHour(hour),
+        value: hours.get(hour) ?? 0,
+      }
+    })
+  }, [todayBookings])
 
   const maxHourlyArrival = Math.max(
-    ...HOURLY_ARRIVALS.map((item) => item.value),
+    ...hourlyArrivals.map((item) => item.value),
+    1,
   )
+
+  const weeklyProcurement = useMemo(() => {
+    return Array.from({ length: 7 }, (_, index) => {
+      const date = getDateDaysAgo(6 - index)
+
+      const value = bookings
+        .filter(
+          (booking) =>
+            booking.slot_date === date &&
+            booking.status === 'completed',
+        )
+        .reduce(
+          (total, booking) =>
+            total + Number(booking.quantity || 0),
+          0,
+        )
+
+      const dateObject = new Date(`${date}T00:00:00`)
+
+      return {
+        day: dateObject.toLocaleDateString('en-IN', {
+          weekday: 'short',
+        }),
+        value,
+      }
+    })
+  }, [bookings])
 
   const maxWeeklyValue = Math.max(
-    ...WEEKLY_PROCUREMENT.map((item) => item.value),
+    ...weeklyProcurement.map((item) => item.value),
+    1,
   )
 
-  const maxWaitTime = Math.max(...WAIT_TIME_DATA.map((item) => item.value))
+  const cropDistribution = useMemo(() => {
+    const cropTotals = new Map<string, number>()
+
+    completedToday.forEach((booking) => {
+      const crop = booking.crop_type || 'Other'
+      const quantity = Number(booking.quantity || 0)
+
+      cropTotals.set(
+        crop,
+        (cropTotals.get(crop) ?? 0) + quantity,
+      )
+    })
+
+    const total = Array.from(cropTotals.values()).reduce(
+      (sum, value) => sum + value,
+      0,
+    )
+
+    return Array.from(cropTotals.entries())
+      .map(([name, value]) => ({
+        name,
+        value:
+          total > 0
+            ? Math.round((value / total) * 100)
+            : 0,
+        quantity: value,
+        icon: CROP_ICONS[name] ?? '🌱',
+      }))
+      .sort((a, b) => b.quantity - a.quantity)
+      .slice(0, 5)
+  }, [completedToday])
+
+  const totalSlotCapacity = useMemo(
+    () =>
+      slots.reduce(
+        (total, slot) =>
+          total + Number(slot.total_slots || 0),
+        0,
+      ),
+    [slots],
+  )
+
+  const bookedSlotCapacity = useMemo(
+    () =>
+      slots.reduce(
+        (total, slot) =>
+          total + Number(slot.booked_slots || 0),
+        0,
+      ),
+    [slots],
+  )
+
+  const slotUtilization = useMemo(
+    () =>
+      slots.map((slot) => ({
+        id: slot.id,
+        label: `${new Date(
+          `1970-01-01T${slot.start_time}`,
+        ).toLocaleTimeString('en-IN', {
+          hour: 'numeric',
+          minute: '2-digit',
+        })} - ${new Date(
+          `1970-01-01T${slot.end_time}`,
+        ).toLocaleTimeString('en-IN', {
+          hour: 'numeric',
+          minute: '2-digit',
+        })}`,
+        booked: slot.booked_slots,
+        total: slot.total_slots,
+        percentage:
+          slot.total_slots > 0
+            ? Math.round(
+                (slot.booked_slots / slot.total_slots) *
+                  100,
+              )
+            : 0,
+      })),
+    [slots],
+  )
+
+  const recentActivity = useMemo(
+    () =>
+      [...todayBookings]
+        .sort(
+          (a, b) =>
+            new Date(b.updated_at).getTime() -
+            new Date(a.updated_at).getTime(),
+        )
+        .slice(0, 4),
+    [todayBookings],
+  )
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 via-white to-slate-50">
@@ -225,19 +413,23 @@ function MandiOwnerDashboardPage() {
               </div>
 
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-                {currentMandi?.name || 'Azadpur Mandi'} Dashboard
+                {currentMandi?.name || 'Mandi'} Dashboard
               </h1>
 
               <div className="flex flex-wrap items-center gap-2 mt-2 text-sm text-slate-500">
                 <span>
-                  📍 {currentMandi?.location || 'New Delhi'}
+                  📍{' '}
+                  {currentMandi?.location ||
+                    'Location unavailable'}
                 </span>
 
                 <span>•</span>
 
                 <span className="inline-flex items-center gap-1 text-green-700">
                   <span className="w-2 h-2 bg-green-500 rounded-full" />
-                  Centre Active
+                  {currentMandi?.is_active
+                    ? 'Centre Active'
+                    : 'Centre Inactive'}
                 </span>
 
                 <span>•</span>
@@ -261,7 +453,7 @@ function MandiOwnerDashboardPage() {
               </p>
 
               <p className="mt-1 text-xs text-green-700">
-                System status: Operational
+                Live data from mandi operations
               </p>
             </div>
           </div>
@@ -279,11 +471,11 @@ function MandiOwnerDashboardPage() {
                 </p>
 
                 <p className="mt-2 text-3xl font-bold text-green-800">
-                  {MOCK_TODAY_STATS.todayArrivals}
+                  {todayBookings.length}
                 </p>
 
                 <p className="mt-1 text-xs text-slate-500">
-                  {MOCK_TODAY_STATS.totalFarmers} scheduled farmers
+                  Real booking records for today
                 </p>
               </div>
 
@@ -294,14 +486,19 @@ function MandiOwnerDashboardPage() {
 
             <div className="mt-4">
               <div className="flex justify-between mb-1 text-[11px] text-slate-400">
-                <span>Arrival progress</span>
+                <span>Processing progress</span>
                 <span>{arrivalProgress}%</span>
               </div>
 
               <div className="w-full h-2 overflow-hidden rounded-full bg-slate-100">
                 <div
                   className="h-full bg-green-500 rounded-full"
-                  style={{ width: `${arrivalProgress}%` }}
+                  style={{
+                    width: `${Math.min(
+                      arrivalProgress,
+                      100,
+                    )}%`,
+                  }}
                 />
               </div>
             </div>
@@ -314,12 +511,12 @@ function MandiOwnerDashboardPage() {
                   Today's Revenue
                 </p>
 
-                <p className="mt-2 text-3xl font-bold text-blue-800">
-                  {formatIndianCurrency(MOCK_TODAY_STATS.todayRevenue)}
+                <p className="mt-2 text-2xl font-bold text-blue-800">
+                  Not available
                 </p>
 
                 <p className="mt-1 text-xs text-slate-500">
-                  {MOCK_TODAY_STATS.completedToday} completed transactions
+                  No financial amount is stored in booking data
                 </p>
               </div>
 
@@ -337,11 +534,11 @@ function MandiOwnerDashboardPage() {
                 </p>
 
                 <p className="mt-2 text-3xl font-bold text-amber-800">
-                  {MOCK_TODAY_STATS.pendingInQueue}
+                  {activeQueue.length}
                 </p>
 
                 <p className="mt-1 text-xs text-slate-500">
-                  Avg. wait {MOCK_TODAY_STATS.avgWaitTime}
+                  Confirmed + processing bookings
                 </p>
               </div>
 
@@ -351,7 +548,16 @@ function MandiOwnerDashboardPage() {
             </div>
 
             <p className="mt-4 text-xs font-semibold text-amber-700">
-              {queueBookings.length} processing records
+              {activeQueue.filter(
+                (booking) =>
+                  booking.status === 'confirmed',
+              ).length}{' '}
+              waiting •{' '}
+              {activeQueue.filter(
+                (booking) =>
+                  booking.status === 'in_progress',
+              ).length}{' '}
+              processing
             </p>
           </div>
 
@@ -363,11 +569,11 @@ function MandiOwnerDashboardPage() {
                 </p>
 
                 <p className="mt-2 text-3xl font-bold text-purple-800">
-                  {MOCK_TODAY_STATS.totalProcurement}
+                  {procurementToday.toLocaleString('en-IN')}
                 </p>
 
                 <p className="mt-1 text-xs text-slate-500">
-                  Quintal processed today
+                  Quintal completed today
                 </p>
               </div>
 
@@ -399,84 +605,112 @@ function MandiOwnerDashboardPage() {
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-5 py-3 font-semibold text-left text-slate-500">
-                      Farmer
-                    </th>
+              {loadingBookings ? (
+                <div className="p-8 text-sm text-center text-slate-500">
+                  Loading live bookings...
+                </div>
+              ) : bookingError ? (
+                <div className="p-8 text-sm text-center text-red-600">
+                  {bookingError}
+                </div>
+              ) : todayBookings.length === 0 ? (
+                <div className="p-8 text-sm text-center text-slate-500">
+                  No bookings found for today.
+                </div>
+              ) : (
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-5 py-3 font-semibold text-left text-slate-500">
+                        Farmer
+                      </th>
 
-                    <th className="px-5 py-3 font-semibold text-left text-slate-500">
-                      Crop
-                    </th>
+                      <th className="px-5 py-3 font-semibold text-left text-slate-500">
+                        Crop
+                      </th>
 
-                    <th className="px-5 py-3 font-semibold text-left text-slate-500">
-                      Vehicle
-                    </th>
+                      <th className="px-5 py-3 font-semibold text-left text-slate-500">
+                        Vehicle
+                      </th>
 
-                    <th className="px-5 py-3 font-semibold text-left text-slate-500">
-                      Slot
-                    </th>
+                      <th className="px-5 py-3 font-semibold text-left text-slate-500">
+                        Slot
+                      </th>
 
-                    <th className="px-5 py-3 font-semibold text-left text-slate-500">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
+                      <th className="px-5 py-3 font-semibold text-left text-slate-500">
+                        Status
+                      </th>
+                    </tr>
+                  </thead>
 
-                <tbody className="divide-y divide-slate-100">
-                  {MOCK_TODAY_BOOKINGS.map((booking) => {
-                    const status =
-                      STATUS_META[booking.status] ?? STATUS_META.scheduled
+                  <tbody className="divide-y divide-slate-100">
+                    {todayBookings.map((booking) => {
+                      const status =
+                        STATUS_META[booking.status] ??
+                        STATUS_META.pending
 
-                    return (
-                      <tr
-                        key={booking.id}
-                        className="transition-colors hover:bg-green-50/40"
-                      >
-                        <td className="px-5 py-4">
-                          <p className="font-semibold text-slate-900">
-                            {booking.farmerName}
-                          </p>
+                      return (
+                        <tr
+                          key={booking.id}
+                          className="transition-colors hover:bg-green-50/40"
+                        >
+                          <td className="px-5 py-4">
+                            <p className="font-semibold text-slate-900">
+                              {booking.farmer_name}
+                            </p>
 
-                          <p className="mt-0.5 text-xs text-slate-400">
-                            #{booking.id}
-                          </p>
-                        </td>
+                            <p className="mt-0.5 text-xs text-slate-400">
+                              #{booking.booking_code}
+                            </p>
+                          </td>
 
-                        <td className="px-5 py-4">
-                          <p className="font-medium text-slate-800">
-                            {CROP_ICONS[booking.crop] ?? '🌾'} {booking.crop}
-                          </p>
+                          <td className="px-5 py-4">
+                            <p className="font-medium text-slate-800">
+                              {CROP_ICONS[
+                                booking.crop_type
+                              ] ?? '🌾'}{' '}
+                              {booking.crop_type}
+                            </p>
 
-                          <p className="mt-0.5 text-xs text-slate-400">
-                            {booking.quantity}
-                          </p>
-                        </td>
+                            <p className="mt-0.5 text-xs text-slate-400">
+                              {booking.quantity} quintal
+                            </p>
+                          </td>
 
-                        <td className="px-5 py-4 font-mono text-xs text-slate-600">
-                          {booking.vehicle}
-                        </td>
+                          <td className="px-5 py-4">
+                            <p className="font-mono text-xs text-slate-600">
+                              {booking.vehicle_number}
+                            </p>
 
-                        <td className="px-5 py-4 font-medium text-slate-700">
-                          {booking.time}
-                        </td>
+                            <p className="mt-0.5 text-[10px] text-slate-400">
+                              {booking.vehicle_type}
+                            </p>
+                          </td>
 
-                        <td className="px-5 py-4">
-                          <span
-                            className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold border rounded-full ${status.badge}`}
-                          >
+                          <td className="px-5 py-4 font-medium text-slate-700">
+                            <p>{formatSlotTime(booking)}</p>
+
+                            <p className="mt-0.5 text-[10px] text-slate-400">
+                              {booking.slot_date}
+                            </p>
+                          </td>
+
+                          <td className="px-5 py-4">
                             <span
-                              className={`w-1.5 h-1.5 rounded-full ${status.dot}`}
-                            />
-                            {status.label}
-                          </span>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                              className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-semibold border rounded-full ${status.badge}`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${status.dot}`}
+                              />
+                              {status.label}
+                            </span>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           </section>
 
@@ -502,15 +736,19 @@ function MandiOwnerDashboardPage() {
 
                     <div>
                       <p className="text-xs font-semibold tracking-wide text-blue-600 uppercase">
-                        Active Record
+                        {nextBooking.status ===
+                        'in_progress'
+                          ? 'Currently Processing'
+                          : 'Next In Queue'}
                       </p>
 
                       <p className="mt-1 font-bold text-slate-900">
-                        {nextBooking.farmerName}
+                        {nextBooking.farmer_name}
                       </p>
 
                       <p className="mt-1 text-xs text-slate-500">
-                        {nextBooking.crop} • {nextBooking.quantity}
+                        {nextBooking.crop_type} •{' '}
+                        {nextBooking.quantity} quintal
                       </p>
                     </div>
                   </div>
@@ -522,7 +760,7 @@ function MandiOwnerDashboardPage() {
                       </p>
 
                       <p className="mt-1 font-mono text-xs font-bold text-slate-800">
-                        {nextBooking.vehicle}
+                        {nextBooking.vehicle_number}
                       </p>
                     </div>
 
@@ -532,12 +770,16 @@ function MandiOwnerDashboardPage() {
                       </p>
 
                       <p className="mt-1 text-xs font-bold text-blue-700">
-                        {nextBooking.time}
+                        {formatSlotTime(nextBooking)}
                       </p>
                     </div>
                   </div>
                 </div>
-              ) : null}
+              ) : (
+                <div className="p-4 text-sm text-center border border-slate-200 rounded-2xl bg-slate-50 text-slate-500">
+                  No active booking is currently being processed.
+                </div>
+              )}
 
               <div className="p-4 mt-4 border border-green-100 rounded-2xl bg-green-50">
                 <div className="flex justify-between">
@@ -559,18 +801,44 @@ function MandiOwnerDashboardPage() {
                 <div className="h-2 mt-4 overflow-hidden bg-white rounded-full">
                   <div
                     className="h-full bg-green-500 rounded-full"
-                    style={{ width: `${completionProgress}%` }}
+                    style={{
+                      width: `${Math.min(
+                        completionProgress,
+                        100,
+                      )}%`,
+                    }}
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 mt-4">
+              <div className="grid grid-cols-3 gap-3 mt-4">
                 <div className="p-3 border bg-slate-50 rounded-xl border-slate-100">
                   <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
                     Waiting
                   </p>
+
                   <p className="mt-1 text-lg font-bold text-amber-700">
-                    {MOCK_TODAY_STATS.pendingInQueue}
+                    {
+                      activeQueue.filter(
+                        (booking) =>
+                          booking.status === 'confirmed',
+                      ).length
+                    }
+                  </p>
+                </div>
+
+                <div className="p-3 border bg-slate-50 rounded-xl border-slate-100">
+                  <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
+                    Processing
+                  </p>
+
+                  <p className="mt-1 text-lg font-bold text-blue-700">
+                    {
+                      activeQueue.filter(
+                        (booking) =>
+                          booking.status === 'in_progress',
+                      ).length
+                    }
                   </p>
                 </div>
 
@@ -578,8 +846,9 @@ function MandiOwnerDashboardPage() {
                   <p className="text-[10px] font-semibold tracking-wide text-slate-400 uppercase">
                     Completed
                   </p>
+
                   <p className="mt-1 text-lg font-bold text-green-700">
-                    {MOCK_TODAY_STATS.completedToday}
+                    {completedToday.length}
                   </p>
                 </div>
               </div>
@@ -602,7 +871,7 @@ function MandiOwnerDashboardPage() {
                 </h2>
 
                 <p className="mt-1 text-xs text-slate-400">
-                  Number of arrivals recorded by hour
+                  Based on today's real booking slot times
                 </p>
               </div>
 
@@ -611,31 +880,43 @@ function MandiOwnerDashboardPage() {
               </span>
             </div>
 
-            <div className="flex items-end h-56 gap-3 mt-8">
-              {HOURLY_ARRIVALS.map((item) => (
-                <div
-                  key={item.label}
-                  className="flex flex-col items-center justify-end flex-1 h-full"
-                >
-                  <span className="mb-2 text-[10px] font-semibold text-slate-500">
-                    {item.value}
-                  </span>
+            {todayBookings.length === 0 ? (
+              <div className="flex items-center justify-center h-56 mt-8 text-sm text-slate-400">
+                No arrival data available.
+              </div>
+            ) : (
+              <div className="flex items-end h-56 gap-3 mt-8">
+                {hourlyArrivals.map((item) => (
+                  <div
+                    key={item.label}
+                    className="flex flex-col items-center justify-end flex-1 h-full"
+                  >
+                    <span className="mb-2 text-[10px] font-semibold text-slate-500">
+                      {item.value}
+                    </span>
 
-                  <div className="flex items-end w-full h-full max-h-40">
-                    <div
-                      className="w-full transition-all bg-green-500 rounded-t-xl hover:bg-green-600"
-                      style={{
-                        height: `${(item.value / maxHourlyArrival) * 100}%`,
-                      }}
-                    />
+                    <div className="flex items-end w-full h-full max-h-40">
+                      <div
+                        className="w-full transition-all bg-green-500 rounded-t-xl hover:bg-green-600"
+                        style={{
+                          height: `${
+                            item.value > 0
+                              ? (item.value /
+                                  maxHourlyArrival) *
+                                100
+                              : 2
+                          }%`,
+                        }}
+                      />
+                    </div>
+
+                    <span className="mt-3 text-[10px] text-slate-400 whitespace-nowrap">
+                      {item.label}
+                    </span>
                   </div>
-
-                  <span className="mt-3 text-[10px] text-slate-400 whitespace-nowrap">
-                    {item.label}
-                  </span>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
 
           {/* Weekly procurement */}
@@ -651,7 +932,7 @@ function MandiOwnerDashboardPage() {
                 </h2>
 
                 <p className="mt-1 text-xs text-slate-400">
-                  Daily processed quantity in quintals
+                  Completed booking quantities from the database
                 </p>
               </div>
 
@@ -661,7 +942,7 @@ function MandiOwnerDashboardPage() {
             </div>
 
             <div className="flex items-end h-56 gap-3 mt-8">
-              {WEEKLY_PROCUREMENT.map((item) => (
+              {weeklyProcurement.map((item) => (
                 <div
                   key={item.day}
                   className="flex flex-col items-center justify-end flex-1 h-full"
@@ -674,7 +955,13 @@ function MandiOwnerDashboardPage() {
                     <div
                       className="w-full bg-blue-500 rounded-t-xl"
                       style={{
-                        height: `${(item.value / maxWeeklyValue) * 100}%`,
+                        height: `${
+                          item.value > 0
+                            ? (item.value /
+                                maxWeeklyValue) *
+                              100
+                            : 2
+                        }%`,
                       }}
                     />
                   </div>
@@ -690,7 +977,7 @@ function MandiOwnerDashboardPage() {
 
         {/* CHART ROW 2 */}
         <div className="grid gap-6 mt-6 lg:grid-cols-[1.1fr_0.9fr]">
-          {/* Wait time trend */}
+          {/* Waiting time */}
           <section className="p-6 bg-white border shadow-sm rounded-2xl border-slate-200">
             <div>
               <p className="text-xs font-semibold tracking-widest uppercase text-amber-700">
@@ -698,51 +985,26 @@ function MandiOwnerDashboardPage() {
               </p>
 
               <h2 className="mt-1 text-lg font-bold text-slate-900">
-                Average Waiting Time Trend
+                Average Waiting Time
               </h2>
 
               <p className="mt-1 text-xs text-slate-400">
-                Daily average farmer waiting time in minutes
+                Waiting-time tracking requires check-in timestamps,
+                which are not currently stored by the backend.
               </p>
             </div>
 
-            <div className="relative h-56 mt-8">
-              {/* Grid */}
-              <div className="absolute inset-0 flex flex-col justify-between">
-                {[0, 1, 2, 3, 4].map((line) => (
-                  <div
-                    key={line}
-                    className="border-t border-dashed border-slate-200"
-                  />
-                ))}
-              </div>
+            <div className="flex flex-col items-center justify-center h-56 mt-6 border border-dashed rounded-2xl border-slate-200 bg-slate-50">
+              <span className="text-3xl">⏱️</span>
 
-              <div className="relative flex items-end h-full gap-3 pt-5 pb-6">
-                {WAIT_TIME_DATA.map((item) => (
-                  <div
-                    key={item.day}
-                    className="relative flex flex-col items-center justify-end flex-1 h-full"
-                  >
-                    <div
-                      className="relative w-4 rounded-full bg-amber-400"
-                      style={{
-                        height: `${(item.value / maxWaitTime) * 80}%`,
-                      }}
-                    >
-                      <div className="absolute w-3 h-3 -translate-x-1/2 border-2 border-white rounded-full left-1/2 -top-2 bg-amber-600" />
-                    </div>
+              <p className="mt-3 text-sm font-semibold text-slate-600">
+                Data not available
+              </p>
 
-                    <span className="absolute bottom-0 text-[10px] text-slate-400">
-                      {item.day}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 mt-3 text-xs text-amber-700">
-              <span className="w-2 h-2 rounded-full bg-amber-500" />
-              Current average: {MOCK_TODAY_STATS.avgWaitTime}
+              <p className="max-w-xs mt-1 text-xs text-center text-slate-400">
+                No waiting-time value is fabricated. Backend
+                check-in and completion timestamps would be needed.
+              </p>
             </div>
           </section>
 
@@ -757,32 +1019,40 @@ function MandiOwnerDashboardPage() {
             </h2>
 
             <p className="mt-1 text-xs text-slate-400">
-              Share of today's procurement by crop
+              Share of today's completed procurement by crop
             </p>
 
-            <div className="mt-6 space-y-4">
-              {CROP_DISTRIBUTION.map((crop) => (
-                <div key={crop.name}>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                      <span>{crop.icon}</span>
-                      {crop.name}
-                    </span>
+            {cropDistribution.length === 0 ? (
+              <div className="flex items-center justify-center h-48 mt-6 text-sm text-slate-400">
+                No completed procurement data available.
+              </div>
+            ) : (
+              <div className="mt-6 space-y-4">
+                {cropDistribution.map((crop) => (
+                  <div key={crop.name}>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                        <span>{crop.icon}</span>
+                        {crop.name}
+                      </span>
 
-                    <span className="text-xs font-bold text-slate-600">
-                      {crop.value}%
-                    </span>
-                  </div>
+                      <span className="text-xs font-bold text-slate-600">
+                        {crop.value}%
+                      </span>
+                    </div>
 
-                  <div className="w-full h-3 overflow-hidden rounded-full bg-slate-100">
-                    <div
-                      className="h-full transition-all bg-purple-500 rounded-full"
-                      style={{ width: `${crop.value}%` }}
-                    />
+                    <div className="w-full h-3 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full transition-all bg-purple-500 rounded-full"
+                        style={{
+                          width: `${crop.value}%`,
+                        }}
+                      />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 
@@ -799,49 +1069,61 @@ function MandiOwnerDashboardPage() {
               </h2>
 
               <p className="mt-1 text-xs text-slate-400">
-                Scheduled bookings versus available capacity
+                Real slot capacity and booking utilization
               </p>
             </div>
 
             <span className="text-xs text-slate-400">
-              20 capacity per slot
+              {bookedSlotCapacity}/{totalSlotCapacity}{' '}
+              capacity booked
             </span>
           </div>
 
-          <div className="space-y-5">
-            {SLOT_UTILIZATION.map((slot) => {
-              const percentage = Math.round(
-                (slot.booked / slot.total) * 100,
-              )
-
-              return (
-                <div key={slot.label}>
+          {loadingSlots ? (
+            <div className="p-8 text-sm text-center text-slate-500">
+              Loading slot data...
+            </div>
+          ) : slotError ? (
+            <div className="p-8 text-sm text-center text-red-600">
+              {slotError}
+            </div>
+          ) : slotUtilization.length === 0 ? (
+            <div className="p-8 text-sm text-center text-slate-400">
+              No active slots available for today.
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {slotUtilization.map((slot) => (
+                <div key={slot.id}>
                   <div className="flex justify-between mb-2">
                     <span className="text-sm font-semibold text-slate-700">
                       {slot.label}
                     </span>
 
                     <span className="text-xs font-semibold text-slate-500">
-                      {slot.booked}/{slot.total} • {percentage}%
+                      {slot.booked}/{slot.total} •{' '}
+                      {slot.percentage}%
                     </span>
                   </div>
 
                   <div className="h-3 overflow-hidden rounded-full bg-slate-100">
                     <div
                       className={`h-full rounded-full ${
-                        percentage >= 95
+                        slot.percentage >= 95
                           ? 'bg-red-400'
-                          : percentage >= 75
+                          : slot.percentage >= 75
                             ? 'bg-amber-400'
                             : 'bg-green-500'
                       }`}
-                      style={{ width: `${percentage}%` }}
+                      style={{
+                        width: `${slot.percentage}%`,
+                      }}
                     />
                   </div>
                 </div>
-              )
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {/* MARKET + ALERTS + ACTIVITY */}
@@ -862,6 +1144,10 @@ function MandiOwnerDashboardPage() {
               <div className="p-8 text-sm text-center text-slate-500">
                 Loading market data...
               </div>
+            ) : prices.length === 0 ? (
+              <div className="p-8 text-sm text-center text-slate-400">
+                No market price data available.
+              </div>
             ) : (
               <div className="divide-y divide-slate-100">
                 {prices.slice(0, 5).map((price) => (
@@ -871,7 +1157,8 @@ function MandiOwnerDashboardPage() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex items-center justify-center rounded-lg w-9 h-9 bg-green-50">
-                        {CROP_ICONS[price.cropName] ?? '🌾'}
+                        {CROP_ICONS[price.cropName] ??
+                          '🌾'}
                       </div>
 
                       <div>
@@ -887,7 +1174,9 @@ function MandiOwnerDashboardPage() {
 
                     <div className="text-right">
                       <p className="text-sm font-bold text-green-700">
-                        {formatIndianCurrency(price.modalPrice)}
+                        {formatIndianCurrency(
+                          price.modalPrice,
+                        )}
                       </p>
 
                       <p className="text-[10px] text-slate-400">
@@ -907,58 +1196,119 @@ function MandiOwnerDashboardPage() {
             </p>
 
             <h2 className="mt-1 text-lg font-bold text-slate-900">
-              Attention Required
+              Current Status
             </h2>
 
             <div className="mt-5 space-y-3">
-              <div className="p-4 border border-red-100 rounded-xl bg-red-50">
-                <div className="flex gap-3">
-                  <span>🚨</span>
+              {slots.some(
+                (slot) =>
+                  slot.total_slots > 0 &&
+                  slot.booked_slots >=
+                    slot.total_slots,
+              ) && (
+                <div className="p-4 border border-red-100 rounded-xl bg-red-50">
+                  <div className="flex gap-3">
+                    <span>🚨</span>
 
-                  <div>
-                    <p className="text-sm font-bold text-red-900">
-                      Morning slot nearly full
-                    </p>
+                    <div>
+                      <p className="text-sm font-bold text-red-900">
+                        One or more slots are full
+                      </p>
 
-                    <p className="mt-1 text-xs leading-5 text-red-700">
-                      The 8–10 AM slot is currently at full capacity.
-                    </p>
+                      <p className="mt-1 text-xs leading-5 text-red-700">
+                        Current slot capacity has reached its
+                        configured limit.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className="p-4 border rounded-xl border-amber-100 bg-amber-50">
-                <div className="flex gap-3">
-                  <span>⏳</span>
+              {activeQueue.length > 0 ? (
+                <div className="p-4 border rounded-xl border-amber-100 bg-amber-50">
+                  <div className="flex gap-3">
+                    <span>⏳</span>
 
-                  <div>
-                    <p className="text-sm font-bold text-amber-900">
-                      Queue requires monitoring
-                    </p>
+                    <div>
+                      <p className="text-sm font-bold text-amber-900">
+                        Queue requires monitoring
+                      </p>
 
-                    <p className="mt-1 text-xs leading-5 text-amber-700">
-                      {MOCK_TODAY_STATS.pendingInQueue} farmers are currently
-                      waiting.
-                    </p>
+                      <p className="mt-1 text-xs leading-5 text-amber-700">
+                        {activeQueue.length} booking
+                        {activeQueue.length === 1
+                          ? ''
+                          : 's'} currently confirmed or
+                        processing.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                <div className="p-4 border border-green-100 rounded-xl bg-green-50">
+                  <div className="flex gap-3">
+                    <span>✓</span>
 
-              <div className="p-4 border border-green-100 rounded-xl bg-green-50">
-                <div className="flex gap-3">
-                  <span>✓</span>
+                    <div>
+                      <p className="text-sm font-bold text-green-900">
+                        No active queue
+                      </p>
 
-                  <div>
-                    <p className="text-sm font-bold text-green-900">
-                      Centre operating normally
-                    </p>
-
-                    <p className="mt-1 text-xs leading-5 text-green-700">
-                      No system-level operational issues detected.
-                    </p>
+                      <p className="mt-1 text-xs leading-5 text-green-700">
+                        There are currently no confirmed or
+                        processing bookings.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {cancelledToday.length > 0 && (
+                <div className="p-4 border border-red-100 rounded-xl bg-red-50">
+                  <div className="flex gap-3">
+                    <span>⚠️</span>
+
+                    <div>
+                      <p className="text-sm font-bold text-red-900">
+                        Cancelled bookings
+                      </p>
+
+                      <p className="mt-1 text-xs leading-5 text-red-700">
+                        {cancelledToday.length} booking
+                        {cancelledToday.length === 1
+                          ? ''
+                          : 's'} cancelled today.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeQueue.length === 0 &&
+                cancelledToday.length === 0 &&
+                !slots.some(
+                  (slot) =>
+                    slot.total_slots > 0 &&
+                    slot.booked_slots >=
+                      slot.total_slots,
+                ) && (
+                  <div className="p-4 border border-green-100 rounded-xl bg-green-50">
+                    <div className="flex gap-3">
+                      <span>✓</span>
+
+                      <div>
+                        <p className="text-sm font-bold text-green-900">
+                          Operations data available
+                        </p>
+
+                        <p className="mt-1 text-xs leading-5 text-green-700">
+                          No active booking or slot-capacity
+                          alerts are currently present.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
             </div>
           </section>
 
@@ -972,59 +1322,52 @@ function MandiOwnerDashboardPage() {
               Operations Timeline
             </h2>
 
-            <div className="mt-5 space-y-5">
-              {[
-                {
-                  icon: '✓',
-                  title: 'Procurement completed',
-                  text: 'Rajesh Kumar • Wheat • 10 quintal',
-                  time: '6:32 AM',
-                },
-                {
-                  icon: '🚜',
-                  title: 'Farmer moved to processing',
-                  text: 'Suresh Yadav • Rice • 25 quintal',
-                  time: '6:48 AM',
-                },
-                {
-                  icon: '📋',
-                  title: 'New farmer checked in',
-                  text: 'Amit Singh • Potato • 50 quintal',
-                  time: '7:02 AM',
-                },
-                {
-                  icon: '🕐',
-                  title: 'Slot allocation updated',
-                  text: 'Morning capacity refreshed',
-                  time: '7:05 AM',
-                },
-              ].map((activity) => (
-                <div
-                  key={`${activity.time}-${activity.title}`}
-                  className="flex gap-3"
-                >
-                  <div className="relative">
-                    <div className="flex items-center justify-center text-sm rounded-full w-9 h-9 bg-green-50">
-                      {activity.icon}
+            {recentActivity.length === 0 ? (
+              <div className="flex items-center justify-center h-48 mt-5 text-sm text-center text-slate-400">
+                No booking activity recorded today.
+              </div>
+            ) : (
+              <div className="mt-5 space-y-5">
+                {recentActivity.map((booking) => {
+                  const status =
+                    STATUS_META[booking.status] ??
+                    STATUS_META.pending
+
+                  return (
+                    <div
+                      key={booking.id}
+                      className="flex gap-3"
+                    >
+                      <div className="flex items-center justify-center text-sm rounded-full w-9 h-9 bg-green-50">
+                        {booking.status ===
+                        'completed'
+                          ? '✓'
+                          : booking.status ===
+                              'in_progress'
+                            ? '🚜'
+                            : '📋'}
+                      </div>
+
+                      <div className="min-w-0">
+                        <p className="text-sm font-semibold text-slate-900">
+                          {booking.farmer_name}
+                        </p>
+
+                        <p className="mt-1 text-xs leading-5 text-slate-500">
+                          {booking.crop_type} •{' '}
+                          {booking.quantity} quintal •{' '}
+                          {status.label}
+                        </p>
+
+                        <p className="mt-1 text-[10px] font-semibold text-slate-400">
+                          Booking #{booking.booking_code}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-900">
-                      {activity.title}
-                    </p>
-
-                    <p className="mt-1 text-xs leading-5 text-slate-500">
-                      {activity.text}
-                    </p>
-
-                    <p className="mt-1 text-[10px] font-semibold text-slate-400">
-                      {activity.time}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
+                  )
+                })}
+              </div>
+            )}
           </section>
         </div>
 
@@ -1040,27 +1383,22 @@ function MandiOwnerDashboardPage() {
             </p>
 
             <p className="mt-1 text-xs text-green-700">
-              {MOCK_TODAY_STATS.completedToday} of{' '}
-              {MOCK_TODAY_STATS.todayArrivals} arrivals processed
+              {completedToday.length} of{' '}
+              {todayBookings.length} bookings completed
             </p>
           </div>
 
           <div className="p-5 border border-blue-100 rounded-2xl bg-blue-50">
             <p className="text-xs font-semibold tracking-wide text-blue-700 uppercase">
-              Avg Revenue / Visit
+              Revenue
             </p>
 
             <p className="mt-2 text-2xl font-bold text-blue-900">
-              {formatIndianCurrency(
-                Math.round(
-                  MOCK_TODAY_STATS.todayRevenue /
-                    Math.max(MOCK_TODAY_STATS.completedToday, 1),
-                ),
-              )}
+              N/A
             </p>
 
             <p className="mt-1 text-xs text-blue-700">
-              Based on today's completed transactions
+              Booking records do not contain transaction amounts
             </p>
           </div>
 
@@ -1070,25 +1408,25 @@ function MandiOwnerDashboardPage() {
             </p>
 
             <p className="mt-2 text-2xl font-bold text-amber-900">
-              {MOCK_TODAY_STATS.pendingInQueue}/20
+              {activeQueue.length}
             </p>
 
             <p className="mt-1 text-xs text-amber-700">
-              Current active capacity
+              Current active bookings
             </p>
           </div>
 
           <div className="p-5 border border-purple-100 rounded-2xl bg-purple-50">
             <p className="text-xs font-semibold tracking-wide text-purple-700 uppercase">
-              Centre Capacity
+              Slot Capacity
             </p>
 
             <p className="mt-2 text-2xl font-bold text-purple-900">
-              {MOCK_TODAY_STATS.activeSlots}/20
+              {bookedSlotCapacity}/{totalSlotCapacity}
             </p>
 
             <p className="mt-1 text-xs text-purple-700">
-              Active time slots
+              Today's booked slot capacity
             </p>
           </div>
         </div>
@@ -1106,9 +1444,11 @@ function MandiOwnerDashboardPage() {
               </p>
 
               <p className="mt-1 text-xs leading-5 text-green-800">
-                This dashboard provides a consolidated operational view of
-                farmer arrivals, queue status, slot utilization, procurement
-                volume and market information.
+                Dashboard metrics are calculated from live booking,
+                slot and market-price data available through the
+                backend. Metrics requiring unsupported financial or
+                waiting-time data are explicitly marked unavailable
+                instead of using fabricated values.
               </p>
             </div>
           </div>

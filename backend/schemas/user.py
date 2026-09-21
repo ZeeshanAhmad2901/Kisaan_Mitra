@@ -14,16 +14,18 @@ class UserCreate(UserBase):
 
 class UserResponse(UserBase):
     id: int
+    mandi_id: int | None = None
     is_active: bool
 
     model_config = ConfigDict(from_attributes=True)
-        
+
+
 class UserListResponse(BaseModel):
     items: list[UserResponse]
     total: int
     page: int
     page_size: int
-    pages: int        
+    pages: int
 
 
 class UserUpdate(BaseModel):
@@ -31,4 +33,5 @@ class UserUpdate(BaseModel):
     phone: str | None = Field(None, min_length=10, max_length=15)
     email: EmailStr | None = None
     role: str | None = None
+    mandi_id: int | None = None
     is_active: bool | None = None

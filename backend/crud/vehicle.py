@@ -60,6 +60,20 @@ def get_all_vehicles(
 
     return vehicles, total
 
+def get_farmer_vehicles(
+    db: Session,
+    farmer_id: int,
+) -> list[Vehicle]:
+    return (
+        db.query(Vehicle)
+        .filter(
+            Vehicle.farmer_id == farmer_id,
+            Vehicle.is_active.is_(True),
+        )
+        .order_by(Vehicle.id)
+        .all()
+    )
+
 
 def get_vehicle_by_id(
     db: Session,

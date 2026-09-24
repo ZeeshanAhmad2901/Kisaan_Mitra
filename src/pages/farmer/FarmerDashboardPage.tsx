@@ -226,7 +226,7 @@ function FarmerDashboardPage() {
               <div className="flex items-center gap-3">
 
                 <div className="flex items-center justify-center text-xl text-white bg-green-800 shadow-sm h-11 w-11 rounded-xl">
-                  Ã°Å¸Å’Â¾
+                  🌾
                 </div>
 
                 <div>
@@ -289,7 +289,7 @@ function FarmerDashboardPage() {
                 </p>
               </div>
 
-              <span className="text-2xl">Ã°Å¸â€œâ€¦</span>
+              <span className="text-2xl">📅</span>
 
             </div>
           </Link>
@@ -314,7 +314,7 @@ function FarmerDashboardPage() {
                 </p>
               </div>
 
-              <span className="text-2xl">Ã°Å¸â€œâ€¹</span>
+              <span className="text-2xl">📋</span>
 
             </div>
           </Link>
@@ -339,7 +339,7 @@ function FarmerDashboardPage() {
                 </p>
               </div>
 
-              <span className="text-2xl">Ã°Å¸Å¡Å“</span>
+              <span className="text-2xl">🚜</span>
 
             </div>
           </Link>
@@ -379,13 +379,13 @@ function FarmerDashboardPage() {
 
                 <p className="mt-1 text-xs text-gray-500">
                   {upcomingBooking
-                    ? `${upcomingBooking.mandi_name} Ã‚Â· ${upcomingBooking.start_time.slice(0, 5)}`
+                    ? `${upcomingBooking.mandi_name} · ${upcomingBooking.start_time.slice(0, 5)}`
                     : t('farmerDashboard.noUpcomingVisit')}
                 </p>
               </div>
 
               <div className="px-3 py-2 text-xl bg-green-100 rounded-xl">
-                Ã°Å¸â€œâ€¦
+                📅
               </div>
 
             </div>
@@ -415,7 +415,7 @@ function FarmerDashboardPage() {
               </div>
 
               <div className="px-3 py-2 text-xl bg-blue-100 rounded-xl">
-                Ã¢Å“â€œ
+                ✓
               </div>
 
             </div>
@@ -447,7 +447,7 @@ function FarmerDashboardPage() {
               </div>
 
               <div className="px-3 py-2 text-xl bg-orange-100 rounded-xl">
-                Ã°Å¸Å¡Å“
+                🚜
               </div>
 
             </div>
@@ -473,7 +473,7 @@ function FarmerDashboardPage() {
                   to="/farmer/vehicles"
                   className="inline-block mt-3 text-xs font-bold text-orange-700 hover:text-orange-800"
                 >
-                  Manage Vehicles Ã¢â€ â€™
+                  →
                 </Link>
 
               </div>
@@ -494,7 +494,7 @@ function FarmerDashboardPage() {
                         </p>
 
                         <p className="mt-1 text-xs text-gray-500">
-                          {vehicle.vehicle_type} Ã‚Â· Vehicle ID #{vehicle.id}
+                          {vehicle.vehicle_type} · Vehicle ID #{vehicle.id}
                         </p>
                       </div>
 
@@ -509,7 +509,7 @@ function FarmerDashboardPage() {
                   to="/farmer/vehicles"
                   className="block text-xs font-bold text-center text-orange-700 hover:text-orange-800"
                 >
-                  Manage Vehicles Ã¢â€ â€™
+                  →
                 </Link>
 
               </div>
@@ -538,12 +538,12 @@ function FarmerDashboardPage() {
                 </p>
 
                 <p className="mt-1 text-xs text-gray-500">
-                  {highestPrice?.cropName ?? t('farmerDashboard.noData')} Ã‚Â· modal price
+                  {highestPrice?.cropName ?? t('farmerDashboard.noData')} · modal price
                 </p>
               </div>
 
               <div className="px-3 py-2 text-xl bg-green-100 rounded-xl">
-                Ã¢â€šÂ¹
+                ₹
               </div>
 
             </div>
@@ -581,7 +581,7 @@ function FarmerDashboardPage() {
               to="/farmer/bookings"
               className="text-sm font-bold text-green-700 hover:text-green-900"
             >
-              View full records Ã¢â€ â€™
+              →
             </Link>
 
           </div>
@@ -698,7 +698,7 @@ function FarmerDashboardPage() {
                         {procurementStats.latest.weighed_quantity} quintal
                       </span>
 
-                      {' Ã‚Â· '}
+                      {' · '}
 
                       {t('farmerDashboard.grade')}{' '}
                       <span className="font-semibold text-gray-800">
@@ -727,7 +727,7 @@ function FarmerDashboardPage() {
                       }`}
                     >
                       {procurementStats.latest.payment_status === 'paid'
-                        ? 'Ã¢Å“â€œ PAID'
+                        ? '✓ PAID'
                         : t('farmerDashboard.paymentPending')}
                     </span>
 
@@ -919,7 +919,7 @@ function FarmerDashboardPage() {
 
                 <h2 className="mt-2 text-2xl font-black text-gray-900">
                   {upcomingBooking
-                    ? `${upcomingBooking.crop_type} Ã‚Â· ${upcomingBooking.mandi_name}`
+                    ? `${upcomingBooking.crop_type} · ${upcomingBooking.mandi_name}`
                     : t('farmerDashboard.noUpcomingProcurement')}
                 </h2>
               </div>
@@ -1008,7 +1008,7 @@ function FarmerDashboardPage() {
             <div className="flex items-center gap-3">
 
               <div className="flex items-center justify-center w-10 h-10 bg-orange-100 rounded-xl">
-                Ã°Å¸â€œÂ¢
+                📢
               </div>
 
               <div>
@@ -1068,7 +1068,7 @@ function FarmerDashboardPage() {
               to="/farmer/bookings"
               className="text-sm font-bold text-green-700 hover:text-green-900"
             >
-              View all Ã¢â€ â€™
+              View all →
             </Link>
 
           </div>
